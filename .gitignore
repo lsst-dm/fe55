@@ -1,0 +1,10 @@
+*.so
+*.os
+*.pyc
+.sconf_temp
+.sconsign.dblite
+config.log
+python/lsst/rasmussen/rasmussenLib.py
+python/lsst/rasmussen/rasmussenLib_wrap.cc
+python/lsst/rasmussen/version.py
+ups/rasmussen.cfgc

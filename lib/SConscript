@@ -1,0 +1,6 @@
+# -*- python -*-
+from lsst.sconsUtils import scripts, targets, env
+
+objs = env.SourcesForSharedLibrary(Glob("#src/*.cc") + Glob("#src/*/*.cc") + Glob("#src/*/*/*.cc") + Glob("#src/*/*/*/*.cc"))
+
+targets["lib"].extend(env.SharedLibrary(env["packageName"], objs, LIBS=env.getLibs("self")))
