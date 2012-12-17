@@ -20,11 +20,21 @@ enum format {e2v_ccd250,lsst_sta_studycontract,bnl_e2v_studycontract,lbox,astd,b
 int comp_int(const void *a,const void *b);
 void median(int x[],int n,int *xmed);
 void printerror( int status);
+void usage(char *complaint);
 
 typedef struct ev_s {
   struct data_str event;
   struct ev_s *prev_ev;
 } ev_stack;
+
+void evaluate_OC_vals 
+  (int *dp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
+   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]);
+void evaluate_file_OC_vals
+  (fitsfile *ffp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
+   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]);
+void pushevent(struct data_str *ev,ev_stack **evs);
+void pulldown_events(ev_stack **evs);
 
 char filename[FNMAX][1024]; 
 long filepos[FNMAX]; /* filepos[fi] is 0L when the file is open, IF it is
@@ -34,10 +44,12 @@ long filepos[FNMAX]; /* filepos[fi] is 0L when the file is open, IF it is
 			should be used to record the last position 
 			before closing.*/
 
+int
 main(int argc,char *argv[])
 {
   char cmd[204800];
-  char biasout[1024],header[2880*HDR_MAXRCDS+8],
+  //char header[2880*HDR_MAXRCDS+8];
+  char biasout[1024],
        destination_directory[1024],eventfilename[FNMAX][1024],*occLUTAB,
        histfilename[FNMAX][1024],tempstr[1024],input_biasfile[1024];
   ev_stack *evstack[FNMAX],*current_evstack_pointer;
@@ -47,16 +59,16 @@ main(int argc,char *argv[])
   int  status=0;
   fitsfile *ffp[FNMAX],*ffib=NULL,*ffout=NULL;
 
-  int fni=0,fi,i,ti,pi,ncount,nx,ny,npix,fill,burstmode,nev,tmpint,
+  int fni=0,fi,i,nx,ny,npix,burstmode,nev,
        *hist[FNMAX],eventsearch,x,y,xi,yi,evthresh,histmin,histmax,histmode,
        nocpix[OCMAX],ncor[OCMAX],ocsample[OCMAX][2048],ocsample_y[2048],
-       OCcorrect[OCMAX][2048],nysample,oc,OCcorrection,tx,noc;
+       OCcorrect[OCMAX][2048],nysample,oc,OCcorrection,noc;
 
   int ocsLU[2048],occLU[2048];
 
-  float PIX[FNMAX],med,weight[FNMAX+1],sx,sxx,mean,sdev,plim[2],
-        arg,ocval[FNMAX][OCMAX];
-  int pix[FNMAX],tmp,*medianbias,*cpix,ib,use_bias,
+  float weight[FNMAX+1],
+        ocval[FNMAX][OCMAX];
+  int pix[FNMAX],tmp,*medianbias,*cpix,
         oc_int[FNMAX][OCMAX];
   int *dp[FNMAX];
   long memorysize;
@@ -326,7 +338,7 @@ main(int argc,char *argv[])
   case bnl_e2v_studycontract:
     {
       /* set up ocsample -- 
-      /* ocsample[][] contains x-addresses for the OC regions to be sampled.*/
+	 ocsample[][] contains x-addresses for the OC regions to be sampled.*/
       noc=1;
       //      nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=276-261+1;
       nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=2024-2009+1;
@@ -347,7 +359,7 @@ main(int argc,char *argv[])
   case e2v_ccd250:
     {
       /* set up ocsample -- 
-      /* ocsample[][] contains x-addresses for the OC regions to be sampled.*/
+	 ocsample[][] contains x-addresses for the OC regions to be sampled.*/
       noc=1;
       //      nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=276-261+1;
       nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=542-(512+10)+1;
@@ -368,7 +380,7 @@ main(int argc,char *argv[])
   case lsst_sta_studycontract:
     {
       /* set up ocsample -- 
-      /* ocsample[][] contains x-addresses for the OC regions to be sampled.*/
+	 ocsample[][] contains x-addresses for the OC regions to be sampled.*/
       noc=1;
       //      nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=276-261+1;
       nocpix[0]=nocpix[1]=nocpix[2]=nocpix[3]=529-510+1;
@@ -575,7 +587,7 @@ main(int argc,char *argv[])
       if (filepos[fi]==0L) {
 	if (fits_close_file(ffp[fni],&status))
 	  printerror(status);
-	fprintf(stderr,"and closed it.\n",filename[fi]);
+	fprintf(stderr,"and closed it (%s)\n",filename[fi]);
 	ffp[fni]=NULL;
 	filepos[fni]=1L;
       }
@@ -1037,7 +1049,7 @@ main(int argc,char *argv[])
 	  }
 	}
 
-	fprintf(stderr,"so far so good (4)\n",row,fi);
+	fprintf(stderr,"so far so good (4) %d %d\n",row,fi);
 
 	if (input_biasfile[0]) {
 	  //	  if (fread(tmp_med_row,sizeof(int),nx,fib)!=nx)
@@ -1365,6 +1377,7 @@ int comp_int(const void *a,const void *b) {
   }
 }
 
+void
 evaluate_OC_vals 
   (int *dp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
    int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]   
@@ -1377,9 +1390,9 @@ evaluate_OC_vals
 //float ocval[][OCMAX];
 {
   int fi,oc,i,yi,xi;
-  int min[OCMAX],ochists[OCMAX][OCHISTMAX],psum[OCMAX],nsum[OCMAX],tx,ty,val,
-  npix,index;
-  int tmp,ocint[FNMAX][OCMAX];
+  int min[OCMAX],ochists[OCMAX][OCHISTMAX],psum[OCMAX],nsum[OCMAX],ty,val,
+  index;
+  int ocint[FNMAX][OCMAX];
 
   fprintf(stderr,"sampling mean OC values:\n");
   for (fi=0;fi<fni;fi++) {
@@ -1456,6 +1469,7 @@ evaluate_OC_vals
 }
 
 
+void
 evaluate_file_OC_vals
   (fitsfile *ffp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
    int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]   
@@ -1469,11 +1483,10 @@ evaluate_file_OC_vals
 {
   int fi,oc,i,yi,xi;
   int status=0;
-  int min[OCMAX],ochists[OCMAX][OCHISTMAX],psum[OCMAX],nsum[OCMAX],tx,ty,val,
-  npix,index;
-  int tmp,ocint[FNMAX][OCMAX],line[2048];
-  long  savepos[FNMAX];
-  char str[1024];
+  int min[OCMAX],ochists[OCMAX][OCHISTMAX],psum[OCMAX],nsum[OCMAX],ty,val,
+  index;
+  int ocint[FNMAX][OCMAX],line[2048];
+  //long  savepos[FNMAX];
   long fpixel[2];
 
   fprintf(stderr,"sampling mean OC values:\n");
@@ -1612,6 +1625,7 @@ evaluate_file_OC_vals
   }
 }
 
+void
 pushevent(struct data_str *ev,ev_stack **evs) 
 //struct data_str  *ev;
 //ev_stack        **evs;
@@ -1625,6 +1639,7 @@ pushevent(struct data_str *ev,ev_stack **evs)
   memcpy(&(current_stack_pointer->event),ev,datastr_size);
 }
 
+void
 pulldown_events(ev_stack **evs)
 //ev_stack **evs;
 {
@@ -1637,6 +1652,7 @@ pulldown_events(ev_stack **evs)
   }
 }
 
+void
 usage(char *complaint)  
 //char *complaint;
 {
