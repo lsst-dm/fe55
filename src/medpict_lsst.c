@@ -617,8 +617,12 @@ main(int argc,char *argv[])
 	    pix[fi]=dp[fi][i];
 	  }
 	  median(pix,fni,&tmp);
-	  for(fi=0;fi<fni;fi++)
-	    dp[fi][i]-=tmp;
+	  if (fni == 1) {
+	     ;				/* the median will be the same as the frame; don't subtract */
+	  } else {
+	     for(fi=0;fi<fni;fi++)
+		dp[fi][i]-=tmp;
+	  }
 	}
 	medianbias[i]=tmp; 
       }
