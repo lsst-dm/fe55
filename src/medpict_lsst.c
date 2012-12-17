@@ -4,8 +4,8 @@
 #include <math.h>
 #include <string.h>
 #include <memory.h>
-#include "/usr/local/heasoft/heacore/cfitsio/fitsio.h"
-#include "/usr/local/heasoft/heacore/cfitsio/fitsio2.h"
+#include "fitsio.h"
+#include "fitsio2.h"
 
 #include "rv.h"
 
