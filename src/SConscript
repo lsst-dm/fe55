@@ -2,5 +2,5 @@
 import glob
 from lsst.sconsUtils import env, scripts
 
-for cfile in glob.glob(".c"):
+for cfile in glob.glob("*.c"):
     env.Default(env.Program(cfile, LIBS=["cfitsio"]))
