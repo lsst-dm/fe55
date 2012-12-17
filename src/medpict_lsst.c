@@ -29,10 +29,10 @@ typedef struct ev_s {
 
 void evaluate_OC_vals 
   (int *dp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
-   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]);
+   int nocpix[],int ocsample[][2048],char occLUTAB[],float ocval[][OCMAX]);
 void evaluate_file_OC_vals
   (fitsfile *ffp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
-   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]);
+   int nocpix[],int ocsample[][2048],char occLUTAB[],float ocval[][OCMAX]);
 void pushevent(struct data_str *ev,ev_stack **evs);
 void pulldown_events(ev_stack **evs);
 
@@ -1380,7 +1380,7 @@ int comp_int(const void *a,const void *b) {
 void
 evaluate_OC_vals 
   (int *dp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
-   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]   
+   int nocpix[],int ocsample[][2048],char occLUTAB[],float ocval[][OCMAX]   
    /*other than the modified *dp arrays, *ocval[] is the return val.*/
    )
 //int *dp[];
@@ -1472,7 +1472,7 @@ evaluate_OC_vals
 void
 evaluate_file_OC_vals
   (fitsfile *ffp[],int fni,int nx,int ny,int nysample,int ocsample_y[],int noc,
-   int nocpix[],int ocsample[][1024],char occLUTAB[],float ocval[][OCMAX]   
+   int nocpix[],int ocsample[][2048],char occLUTAB[],float ocval[][OCMAX]   
    /*other than the modified *dp arrays, *ocval[] is the return val.*/
    )
 //fitsfile *ffp[];
