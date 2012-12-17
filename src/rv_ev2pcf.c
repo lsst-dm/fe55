@@ -13,8 +13,10 @@
  *	Modified for new SIS grades	gbc	02 Dec 1992
  *	Modified for Reset correction	gbc	19 Mar 1993
  */
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "rv.h"
 
 #define EVENTS 		1024

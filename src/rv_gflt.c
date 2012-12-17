@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <unistd.h>
 #include "rv.h"
 
 #define EVENTS 		1024
@@ -89,7 +90,7 @@ main(argc,argv)
 	char	**argv;
 {
 	int	event, split, num, gr, i, k, tot = 0;
-	char	sfile[256], style[256];
+	char	style[256];
 	double	reset=0, atof();
 
 	if (argc<2) {

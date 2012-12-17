@@ -1,2 +1,5 @@
 *.o
 medpict_lsst
+rv_ev2pcf
+rv_ev2xygpx
+rv_gflt

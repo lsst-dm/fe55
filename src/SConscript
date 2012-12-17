@@ -1,4 +1,6 @@
 # -*- python -*-
+import glob
 from lsst.sconsUtils import env, scripts
 
-env.Program("medpict_lsst.c", LIBS=["cfitsio"])
+for cfile in glob.glob(".c"):
+    env.Default(env.Program(cfile, LIBS=["cfitsio"]))
