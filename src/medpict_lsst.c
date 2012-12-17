@@ -1321,7 +1321,7 @@ main(int argc,char *argv[])
 		 datastr_size,1,fevlist[fi]);
 	  current_evstack_pointer=current_evstack_pointer->prev_ev;
 	}
-	pulldown_events(evstack[fi]);
+	pulldown_events(&evstack[fi]);
 	fclose(fevlist[fi]);
       }
     } else {
@@ -1336,7 +1336,7 @@ main(int argc,char *argv[])
 		 datastr_size,1,fevlist[fi]);
 	  current_evstack_pointer=current_evstack_pointer->prev_ev;
 	}
-	pulldown_events(evstack[fi]);
+	pulldown_events(&evstack[fi]);
       }
     }
   }
