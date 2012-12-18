@@ -415,8 +415,7 @@ main(int argc, char **argv)
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
-	while ((num = read(0, (char *)eventdata,
-		EVENTS*sizeof(data_str))/sizeof(data_str)) > 0) {
+	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
 		tot += num;
 		make_classification(do_what, event, split, num, eventdata, reset, style);
 	}

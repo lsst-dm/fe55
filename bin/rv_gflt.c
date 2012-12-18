@@ -543,8 +543,8 @@ main(int argc, char **argv)
 	
 /* ready for the data now. */
 	prep_hist();
-	while ((num = read(0, (char *)eventdata,
-		EVENTS*sizeof(struct data_str))/sizeof(struct data_str)) > 0) {
+	const int nread = 1000;		/* number of events to read at a time */
+	while ((num = fread((void *)eventdata, sizeof(struct data_str), nread, stdin)) > 0) {
 		tot += num;
 		make_hist(event, split, num, eventdata, reset, style);
 	}
