@@ -18,27 +18,28 @@
 #include <unistd.h>
 #include "lsst/rasmussen/rv.h"
 
-const int MAXADU = 4096;
-
 namespace {
+    const int MAXADU = 4096;
+
     struct look_up {
         int *type;
-        int *extr;
+        const int *extr;
         int *hist;
     } table[256];
 
-int		nsngle,nsplus,npvert,npleft,nprght,npplus,
+    int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
-int		ev_min = MAXADU, xav = 0, yav = 0;
-short		min_adu = MAXADU, max_adu = 0;
-short		min_2ct = MAXADU, max_2ct = 0;
-short		xn = 512, xx = 0, yn = 512, yx = 0;
+    int		ev_min = MAXADU, xav = 0, yav = 0;
+    short	min_adu = MAXADU, max_adu = 0;
+    short	min_2ct = MAXADU, max_2ct = 0;
+    short	xn = 512, xx = 0, yn = 512, yx = 0;
 
-typedef enum calctype { p_9,
-			p_17,
-			p_35,
-			p_1357,
-			p_list } calctype; // for the "total"
+    enum calctype { p_9,
+                    p_17,
+                    p_35,
+                    p_1357,
+                    p_list,             // for the "total"
+    };
 }
 
 /*
@@ -76,12 +77,12 @@ static void
 prep_hist()
 {
     static
-    int extra[][4] = {  {4,4,4,4},
+    const int extra[][4] = {  {4,4,4,4},
                         {0,4,4,4}, {2,4,4,4}, {6,4,4,4}, {8,4,4,4},
                         {0,2,4,4}, {0,6,4,4}, {6,8,4,4}, {8,2,4,4},
                         {0,2,6,8} };
     static
-    unsigned char emask[] = { 0x00,
+    const unsigned char emask[] = { 0x00,
                               0x0a,0x12,0x48,0x50,
                               0x1a,0x4a,0x58,0x52,
                               0x5a };
@@ -203,7 +204,7 @@ make_classification(calctype do_what,
                     int event,
                     int split,
                     int num,
-                    struct data_str *ev,
+                    data_str *ev,
                     double rst,
                     char *sty
         )
@@ -212,8 +213,6 @@ make_classification(calctype do_what,
 	register unsigned char	map;
 	register int		j;
 	short			phj, sum, phe[9], hsum;
-	struct look_up		*ent;
-	int			*xtr;
 
 	for ( ; num--; ev++) {
 		/*
@@ -239,7 +238,7 @@ make_classification(calctype do_what,
 		/*
 		 *  Characterize event & accumulate most of pha
 		 */
-		int p4 = ev->data[4];
+		const int p4 = ev->data[4];
 		int p9 = 0;
 		for (j = 0, map = 0, sum = 0; j < 9; j++) {
 			phe[j] = phj = ev->data[j];
@@ -280,8 +279,8 @@ make_classification(calctype do_what,
 		/*
 		 *  Finish pha with extra pixels of L, Q, and O events
 		 */
-		ent = &table[map];
-		xtr = ent->extr;
+                look_up *const ent = &table[map];
+		const int *xtr = ent->extr;
 		for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
 		/*
 		 *  Accumulate statistics and various bounds
@@ -385,26 +384,18 @@ main(int argc, char **argv)
 	    if (--argc) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-		do_what=p_9;
-	      } else {
-		if (strcmp(calc,"p17")==0) {
+                  do_what=p_9;
+	      } else if (strcmp(calc,"p17")==0) {
 		  do_what=p_17;
-		} else {
-		  if (strcmp(calc,"p35")==0) {
-		    do_what=p_35;
-		  } else {
-		    if (strcmp(calc,"p1357")==0) {
-		      do_what=p_1357;
-		    } else {
-		      if (strcmp(calc,"plist")==0) {
-			do_what=p_list;
-		      } else {
-			fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
-			exit(1);
-		      }
-		    }
-		  }
-		}
+              } else if (strcmp(calc,"p35")==0) {
+                  do_what=p_35;
+              } else if (strcmp(calc,"p1357")==0) {
+                  do_what=p_1357;
+              } else if (strcmp(calc,"plist")==0) {
+                  do_what=p_list;
+              } else {
+                  fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
+                  exit(1);
 	      }
 	      if (--argc) {
 		sfile = *++argv;
@@ -422,7 +413,7 @@ main(int argc, char **argv)
 	prep_hist();
 
         const int EVENTS = 1024;
-        struct data_str eventdata[EVENTS];
+        data_str eventdata[EVENTS];
 
 	while ((num = read(0, (char *)eventdata,
 		EVENTS*sizeof(data_str))/sizeof(data_str)) > 0) {
