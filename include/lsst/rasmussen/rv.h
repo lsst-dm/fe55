@@ -1,3 +1,5 @@
+#if !defined(LSST_RASMUSSEN_H)
+#define LSST_RASMUSSEN_H
 /* rv.h		24 July 89	Roland Vanderspek
 
    Include file for RV tools software
@@ -21,14 +23,10 @@
 
 #define param_file		"FINDEVENTS.PARAM"
 
-struct data_str
-  {
-  char mode;
-  int framenum;
-  short chipnum,x,y,data[9];
-  };
-short datastr_size = sizeof(struct data_str);
+struct data_str {
+    char mode;
+    int framenum;
+    short chipnum,x,y,data[9];
+};
 
-short pream_size = 0;
-
-
+#endif

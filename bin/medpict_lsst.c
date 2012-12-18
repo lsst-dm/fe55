@@ -1318,7 +1318,7 @@ main(int argc,char *argv[])
 	while (current_evstack_pointer!=NULL) {
 	  fwrite(
 		 &(current_evstack_pointer->event),
-		 datastr_size,1,fevlist[fi]);
+		 sizeof(struct data_str),1,fevlist[fi]);
 	  current_evstack_pointer=current_evstack_pointer->prev_ev;
 	}
 	pulldown_events(&evstack[fi]);
@@ -1333,7 +1333,7 @@ main(int argc,char *argv[])
 	while (current_evstack_pointer!=NULL) {
 	  fwrite(
 		 &(current_evstack_pointer->event),
-		 datastr_size,1,fevlist[fi]);
+		 sizeof(struct data_str),1,fevlist[fi]);
 	  current_evstack_pointer=current_evstack_pointer->prev_ev;
 	}
 	pulldown_events(&evstack[fi]);
@@ -1627,8 +1627,6 @@ evaluate_file_OC_vals
 
 void
 pushevent(struct data_str *ev,ev_stack **evs) 
-//struct data_str  *ev;
-//ev_stack        **evs;
 {
   ev_stack *current_stack_pointer;
 
@@ -1636,7 +1634,7 @@ pushevent(struct data_str *ev,ev_stack **evs)
     usage("can't allocate eventstack pointer.");
   current_stack_pointer->prev_ev=*evs;
   *evs=current_stack_pointer;
-  memcpy(&(current_stack_pointer->event),ev,datastr_size);
+  memcpy(&(current_stack_pointer->event),ev,sizeof(struct data_str));
 }
 
 void

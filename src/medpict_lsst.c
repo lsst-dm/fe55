@@ -7,7 +7,7 @@
 #include "fitsio.h"
 #include "fitsio2.h"
 
-#include "rv.h"
+#include "lsst/rasmussen/rv.h"
 
 #define FNMAX     2000
 #define OCHISTMAX 300

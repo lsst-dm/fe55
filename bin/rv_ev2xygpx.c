@@ -75,74 +75,6 @@ typedef enum calctype { p_9,
 			p_list } calctype; // for the "total"
 calctype do_what=p_9;
 
-int
-main(argc,argv)
-	int	argc;
-	char	**argv;
-{
-	int	event, split, num, tot = 0;
-	char	*sfile, def_style = '1', *style = &def_style;
-	double	reset = 0, atof();
-	char    *calc;
-
-	if (argc == 1) {	/* for diagnostic purposes */
-		prep_hist();
-		dump_table();
-		return(0);
-	}
-	if (argc < 3 || argc > 6) { usage(); return(1); }
-	if (--argc) {
-	  event = atoi(*++argv);
-	  if (--argc) {
-	    split = atoi(*++argv);
-	    if (--argc) {
-	      calc=*++argv;
-	      if (strcmp(calc,"p9")==0) {
-		do_what=p_9;
-	      } else {
-		if (strcmp(calc,"p17")==0) {
-		  do_what=p_17;
-		} else {
-		  if (strcmp(calc,"p35")==0) {
-		    do_what=p_35;
-		  } else {
-		    if (strcmp(calc,"p1357")==0) {
-		      do_what=p_1357;
-		    } else {
-		      if (strcmp(calc,"plist")==0) {
-			do_what=p_list;
-		      } else {
-			fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
-			exit(1);
-		      }
-		    }
-		  }
-		}
-	      }
-	      if (--argc) {
-		sfile = *++argv;
-		if (--argc) {
-		  reset = atof(*++argv);
-		  if (--argc) {
-		    style = *++argv;
-		  }
-		}
-	      }
-	    }
-	  }
-	}
-
-	prep_hist();
-	while ((num = read(0, (char *)eventdata,
-		EVENTS*datastr_size)/datastr_size) > 0) {
-		tot += num;
-		make_classification(event, split, num, eventdata, reset, style);
-	}
-	//	dump_head(sfile, event, split, tot);
-	//	dump_hist(event, split, sfile);
-	return(0);
-}
-
 /*
  *  Usage complaint message
  */
@@ -307,11 +239,13 @@ prep_hist()
  *  Accumulate the num events in the tables
  */
 static void
-make_classification(event, split, num, ev, rst, sty)
-	int		event, split, num;
-	struct data_str	*ev;
-	char		*sty;
-	double		rst;
+make_classification(int event,
+                    int split,
+                    int num,
+                    struct data_str *ev,
+                    double rst,
+                    char *sty
+        )
 {
   // in this routine we write out the x,y,grade,ph for each event.
 	register unsigned char	map;
@@ -437,13 +371,10 @@ make_classification(event, split, num, ev, rst, sty)
  *  Dump the basic calibration file header
  */
 static void
-dump_head(sfile, event, split, total)
-	char	*sfile;
-	int	event, split, total;
+dump_head(char *sfile, int event, int split, int total)
 {
 	FILE	*fp;
 	char	line[NAMLEN], *c;
-	char	*getcwd();
 
 	(void)fprintf(stdout, "!\n");
 	(void)fprintf(stdout, "!  QDP Basic Calibration File\n");
@@ -493,9 +424,7 @@ dump_head(sfile, event, split, total)
  *  Dump the QDP header histogram table
  */
 static void
-dump_hist(event, split, sfile)
-	char	*sfile;
-	int	event, split;
+dump_hist(int event, int split, char *sfile)
 {
 	register int	i;
 
@@ -539,4 +468,71 @@ dump_hist(event, split, sfile)
 			"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i,
 			histo[0][i], histo[1][i], histo[2][i], histo[3][i],
 			histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
+}
+
+
+int
+main(int argc, char **argv)
+{
+	int	event, split, num, tot = 0;
+	char	*sfile, def_style = '1', *style = &def_style;
+	double	reset = 0;
+	char    *calc;
+
+	if (argc == 1) {	/* for diagnostic purposes */
+		prep_hist();
+		dump_table();
+		return(0);
+	}
+	if (argc < 3 || argc > 6) { usage(); return(1); }
+	if (--argc) {
+	  event = atoi(*++argv);
+	  if (--argc) {
+	    split = atoi(*++argv);
+	    if (--argc) {
+	      calc=*++argv;
+	      if (strcmp(calc,"p9")==0) {
+		do_what=p_9;
+	      } else {
+		if (strcmp(calc,"p17")==0) {
+		  do_what=p_17;
+		} else {
+		  if (strcmp(calc,"p35")==0) {
+		    do_what=p_35;
+		  } else {
+		    if (strcmp(calc,"p1357")==0) {
+		      do_what=p_1357;
+		    } else {
+		      if (strcmp(calc,"plist")==0) {
+			do_what=p_list;
+		      } else {
+			fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
+			exit(1);
+		      }
+		    }
+		  }
+		}
+	      }
+	      if (--argc) {
+		sfile = *++argv;
+		if (--argc) {
+		  reset = atof(*++argv);
+		  if (--argc) {
+		    style = *++argv;
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+
+	prep_hist();
+	while ((num = read(0, (char *)eventdata,
+		EVENTS*sizeof(struct data_str))/sizeof(struct data_str)) > 0) {
+		tot += num;
+		make_classification(event, split, num, eventdata, reset, style);
+	}
+	//	dump_head(sfile, event, split, tot);
+	//	dump_hist(event, split, sfile);
+	return(0);
 }

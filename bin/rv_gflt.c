@@ -80,130 +80,8 @@ char		efile[NAMLEN];
 int nacc, nnoto;
 unsigned char accmap[256], notomap[256], filter=0xff;
 
-static void	usage(), prep_hist(), make_hist(), dump_head(), dump_hist();
-
 int     phlo=0,phhi=4095;
 
-int
-main(argc,argv)
-	int	argc;
-	char	**argv;
-{
-	int	event, split, num, gr, i, k, tot = 0;
-	char	style[256];
-	double	reset=0, atof();
-
-	if (argc<2) {
-	  usage();
-	  return(1);
-	}
-
-	--argc;argv++;	event=atoi(*argv);
-	--argc;argv++;	split=atoi(*argv);
-
-	while (--argc>0) {
-	  argv++;
-	  switch (argv[0][0]) {
-	  case '-':
-	    switch (argv[0][1]) {
-	    case 'g':
-	      if (filter == 0xff) filter=0x00;
-	      while (--argc>0) {
-		argv++;
-		if (argv[0][0] == '-') {
-		  argc++;  argv--;  goto end_of_grades;
-		}
-		gr=(int)atoi(*argv);
-		if ((gr >= 8) || (gr < 0)) { usage(); return (1);}
-		filter |= grades[gr];
-	      }
-	    end_of_grades:
-	      break;
-	    case 'p':
-	      if (argc<2) {
-		usage();
-		return(1);
-	      }
-	      --argc;argv++;	phlo=atoi(*argv);
-	      --argc;argv++;	phhi=atoi(*argv);
-	      break;
-	    default:
-	      break;
-	    }
-	    break;
-	  default:
-	    break;
-	  }
-	}
-
-	/* make up the array of acceptable maps. */
-
-	for (i=0;i<256;i++) accmap[i]=0;
-	nacc=0;
-
-	if (filter & 0x01) 
-	  {
-	    for (k=0;k<sizeof(sngle);k++) accmap[nacc+k]=sngle[k];
-	    nacc+=sizeof(sngle); 
-	  }
-	if (filter & 0x02) 
-	  {
-	    for (k=0;k<sizeof(splus);k++) accmap[nacc+k]=splus[k];
-	    nacc+=sizeof(splus); 
-	  }
-	if (filter & 0x04) 
-	  {
-	    for (k=0;k<sizeof(pvert);k++) accmap[nacc+k]=pvert[k];
-	    nacc+=sizeof(pvert); 
-	  }
-	if (filter & 0x08) 
-	  {
-	    for (k=0;k<sizeof(pleft);k++) accmap[nacc+k]=pleft[k];
-	    nacc+=sizeof(pleft); 
-	  }
-	if (filter & 0x10) 
-	  {
-	    for (k=0;k<sizeof(prght);k++) accmap[nacc+k]=prght[k];
-	    nacc+=sizeof(prght); 
-	  }
-	if (filter & 0x20) 
-	  {
-	    for (k=0;k<sizeof(pplus);k++) accmap[nacc+k]=pplus[k];
-	    nacc+=sizeof(pplus); 
-	  }
-	if (filter & 0x40) 
-	  {
-	    for (k=0;k<sizeof(elnsq);k++) accmap[nacc+k]=elnsq[k];
-	    nacc+=sizeof(elnsq); 
-	  }
-	/* need to make a `not others' array. */
-	    nnoto=0;
-	    for (k=0;k<sizeof(sngle);k++) notomap[nnoto+k]=sngle[k];
-	    nnoto+=sizeof(sngle);
-	    for (k=0;k<sizeof(splus);k++) notomap[nnoto+k]=splus[k];
-	    nnoto+=sizeof(splus);
-	    for (k=0;k<sizeof(pvert);k++) notomap[nnoto+k]=pvert[k];
-	    nnoto+=sizeof(pvert);
-	    for (k=0;k<sizeof(pleft);k++) notomap[nnoto+k]=pleft[k];
-	    nnoto+=sizeof(pleft);
-	    for (k=0;k<sizeof(prght);k++) notomap[nnoto+k]=prght[k];
-	    nnoto+=sizeof(prght);
-	    for (k=0;k<sizeof(pplus);k++) notomap[nnoto+k]=pplus[k];
-	    nnoto+=sizeof(pplus);
-	    for (k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
-	    nnoto+=sizeof(elnsq);
-	
-/* ready for the data now. */
-	prep_hist();
-	while ((num = read(0, (char *)eventdata,
-		EVENTS*datastr_size)/datastr_size) > 0) {
-		tot += num;
-		make_hist(event, split, num, eventdata, reset, style);
-	}
-	return(0);
-/*	dump_head(sfile, event, split, tot); */
-/*	dump_hist(event, split, sfile);      */
-}
 
 /*
  *  Usage complaint message
@@ -338,11 +216,13 @@ prep_hist()
  *  Accumulate the num events in the tables
  */
 static void
-make_hist(event, split, num, ev, rst, sty)
-	int		event, split, num;
-	struct data_str	*ev;
-	char		*sty;
-	double		rst;
+make_hist(int event,
+          int split,
+          int num,
+          struct data_str *ev,
+          double rst,
+          char *sty
+         )
 {
 	register unsigned char	map;
 	register int		j;
@@ -454,13 +334,11 @@ make_hist(event, split, num, ev, rst, sty)
  *  Dump the basic calibration file header
  */
 static void
-dump_head(sfile, event, split, total)
-	char	*sfile;
-	int	event, split, total;
+dump_head(char	*sfile,
+          int event, int split, int total)          
 {
 	FILE	*fp;
 	char	line[NAMLEN], *c;
-	char	*getcwd();
 
 	(void)fprintf(stdout, "!\n");
 	(void)fprintf(stdout, "!  QDP Basic Calibration File\n");
@@ -510,9 +388,7 @@ dump_head(sfile, event, split, total)
  *  Dump the QDP header histogram table
  */
 static void
-dump_hist(event, split, sfile)
-	char	*sfile;
-	int	event, split;
+dump_hist(int event, int split, char *sfile)
 {
 	register int	i;
 
@@ -556,4 +432,123 @@ dump_hist(event, split, sfile)
 			"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i,
 			histo[0][i], histo[1][i], histo[2][i], histo[3][i],
 			histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
+}
+
+int
+main(int argc, char **argv)
+{
+	int	event, split, num, gr, i, k, tot = 0;
+	char	style[256];
+	double	reset=0;
+
+	if (argc<2) {
+	  usage();
+	  return(1);
+	}
+
+	--argc;argv++;	event=atoi(*argv);
+	--argc;argv++;	split=atoi(*argv);
+
+	while (--argc>0) {
+	  argv++;
+	  switch (argv[0][0]) {
+	  case '-':
+	    switch (argv[0][1]) {
+	    case 'g':
+	      if (filter == 0xff) filter=0x00;
+	      while (--argc>0) {
+		argv++;
+		if (argv[0][0] == '-') {
+		  argc++;  argv--;  goto end_of_grades;
+		}
+		gr=(int)atoi(*argv);
+		if ((gr >= 8) || (gr < 0)) { usage(); return (1);}
+		filter |= grades[gr];
+	      }
+	    end_of_grades:
+	      break;
+	    case 'p':
+	      if (argc<2) {
+		usage();
+		return(1);
+	      }
+	      --argc;argv++;	phlo=atoi(*argv);
+	      --argc;argv++;	phhi=atoi(*argv);
+	      break;
+	    default:
+	      break;
+	    }
+	    break;
+	  default:
+	    break;
+	  }
+	}
+
+	/* make up the array of acceptable maps. */
+
+	for (i=0;i<256;i++) accmap[i]=0;
+	nacc=0;
+
+	if (filter & 0x01) 
+	  {
+	    for (k=0;k<sizeof(sngle);k++) accmap[nacc+k]=sngle[k];
+	    nacc+=sizeof(sngle); 
+	  }
+	if (filter & 0x02) 
+	  {
+	    for (k=0;k<sizeof(splus);k++) accmap[nacc+k]=splus[k];
+	    nacc+=sizeof(splus); 
+	  }
+	if (filter & 0x04) 
+	  {
+	    for (k=0;k<sizeof(pvert);k++) accmap[nacc+k]=pvert[k];
+	    nacc+=sizeof(pvert); 
+	  }
+	if (filter & 0x08) 
+	  {
+	    for (k=0;k<sizeof(pleft);k++) accmap[nacc+k]=pleft[k];
+	    nacc+=sizeof(pleft); 
+	  }
+	if (filter & 0x10) 
+	  {
+	    for (k=0;k<sizeof(prght);k++) accmap[nacc+k]=prght[k];
+	    nacc+=sizeof(prght); 
+	  }
+	if (filter & 0x20) 
+	  {
+	    for (k=0;k<sizeof(pplus);k++) accmap[nacc+k]=pplus[k];
+	    nacc+=sizeof(pplus); 
+	  }
+	if (filter & 0x40) 
+	  {
+	    for (k=0;k<sizeof(elnsq);k++) accmap[nacc+k]=elnsq[k];
+	    nacc+=sizeof(elnsq); 
+	  }
+	/* need to make a `not others' array. */
+	    nnoto=0;
+	    for (k=0;k<sizeof(sngle);k++) notomap[nnoto+k]=sngle[k];
+	    nnoto+=sizeof(sngle);
+	    for (k=0;k<sizeof(splus);k++) notomap[nnoto+k]=splus[k];
+	    nnoto+=sizeof(splus);
+	    for (k=0;k<sizeof(pvert);k++) notomap[nnoto+k]=pvert[k];
+	    nnoto+=sizeof(pvert);
+	    for (k=0;k<sizeof(pleft);k++) notomap[nnoto+k]=pleft[k];
+	    nnoto+=sizeof(pleft);
+	    for (k=0;k<sizeof(prght);k++) notomap[nnoto+k]=prght[k];
+	    nnoto+=sizeof(prght);
+	    for (k=0;k<sizeof(pplus);k++) notomap[nnoto+k]=pplus[k];
+	    nnoto+=sizeof(pplus);
+	    for (k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
+	    nnoto+=sizeof(elnsq);
+	
+/* ready for the data now. */
+	prep_hist();
+	while ((num = read(0, (char *)eventdata,
+		EVENTS*sizeof(struct data_str))/sizeof(struct data_str)) > 0) {
+		tot += num;
+		make_hist(event, split, num, eventdata, reset, style);
+	}
+	return(0);
+/*	dump_head(sfile, event, split, tot); */
+/*	dump_hist(event, split, sfile);      */
 }

@@ -1,4 +1,3 @@
-
 /*
  *  rv_ev2pcf.c -- Convert evlist to basic calibration file
  *
@@ -14,16 +13,17 @@
  *	Modified for Reset correction	gbc	19 Mar 1993
  */
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
-#include "rv.h"
+#include "lsst/rasmussen/rv.h"
 
 #define EVENTS 		1024
 #define MAXADU 		4096
 #define EXTADU		8
 #define NAMLEN		512
 
+namespace {
 struct data_str eventdata[EVENTS];
 struct look_up { int *type, *extr, *hist; } table[256];
 
@@ -52,7 +52,6 @@ unsigned char	prght[] = { 0x10,0x30,0x11,0x31 };			/* 4 */
 /*
  *  gned char	phorz[] = { 0x08,0x10,0x0c,0x88,0x30,0x11,0x8c,0x31 };
  */
-
 unsigned char	pplus[] = { 0x03,0x06,0x09,0x28,0x60,0xc0,0x90,0x14,	/* 5 */
 			    0x83,0x26,0x89,0x2c,0x64,0xc1,0x91,0x34,
 			    0x23,0x86,0x0d,0xa8,0x61,0xc4,0xb0,0x15,
@@ -67,41 +66,12 @@ unsigned char	elnsq[] = { 0x12,0x32,0x50,0x51,0x48,0x4c,0x0a,0x8a,	/* 6 */
 unsigned char	other[256] /* = { all of the rest } */;			/* 7 */
 char		efile[NAMLEN];
 
-static void	usage(), prep_hist(), make_hist(),
-		dump_head(), dump_hist(), dump_table();
-
-int
-main(argc,argv)
-	int	argc;
-	char	**argv;
-{
-	int	event, split, num, tot = 0;
-	char	*sfile, def_style = '1', *style = &def_style;
-	double	reset = 0, atof();
-
-	if (argc == 1) {	/* for diagnostic purposes */
-		prep_hist();
-		dump_table();
-		return(0);
-	}
-	if (argc < 4 || argc > 6) { usage(); return(1); }
-	if (--argc) event = atoi(*++argv);
-	if (--argc) split = atoi(*++argv);
-	if (--argc) sfile = *++argv;
-	if (--argc) {
-		reset = atof(*++argv);
-		if (--argc) style = *++argv;
-	}
-
-	prep_hist();
-	while ((num = read(0, (char *)eventdata,
-		EVENTS*datastr_size)/datastr_size) > 0) {
-		tot += num;
-		make_hist(event, split, num, eventdata, reset, style);
-	}
-	dump_head(sfile, event, split, tot);
-	dump_hist(event, split, sfile);
-	return(0);
+typedef enum calctype { p_9,
+			p_17,
+			p_35,
+			p_1357,
+			p_list } calctype; // for the "total"
+calctype do_what=p_9;
 }
 
 /*
@@ -268,12 +238,15 @@ prep_hist()
  *  Accumulate the num events in the tables
  */
 static void
-make_hist(event, split, num, ev, rst, sty)
-	int		event, split, num;
-	struct data_str	*ev;
-	char		*sty;
-	double		rst;
+make_classification(int event,
+                    int split,
+                    int num,
+                    struct data_str *ev,
+                    double rst,
+                    char *sty
+        )
 {
+  // in this routine we write out the x,y,grade,ph for each event.
 	register unsigned char	map;
 	register int		j;
 	short			phj, sum, phe[9], hsum;
@@ -308,11 +281,27 @@ make_hist(event, split, num, ev, rst, sty)
 		/*
 		 *  Characterize event & accumulate most of pha
 		 */
+		int p4 = ev->data[4];
+		int p9 = 0;
 		for (j = 0, map = 0, sum = 0; j < 9; j++) {
 			phe[j] = phj = ev->data[j];
+
+			if (do_what==p_9) {
+			  p9 += phj;
+			} 
+			if (do_what==p_1357) {
+			  if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9+=phj;
+			}
+			if (do_what==p_17) {
+			  if ((j-1)*(j-7)*(j-4)==0) p9+=phj;
+			}
+			if (do_what==p_35) {
+			  if ((j-3)*(j-5)*(j-4)==0) p9+=phj;
+			}
+
 			if (phj < split && j != 4) {
-				phe[j] = 0;
-				continue;
+			  phe[j] = 0;
+			  continue;
 			}
 			switch (j) {
 				case 0: map |= 0x01;           ; break;
@@ -351,6 +340,29 @@ make_hist(event, split, num, ev, rst, sty)
 			if (sum > max_2ct) max_2ct = sum;
 			if (sum < min_2ct) min_2ct = sum;
 		}
+		{
+		  int grd;
+		  if (ent->type == &nsngle) { grd=0; } 
+		  else { if (ent->type == &nsplus) { grd=1; }
+		    else { if (ent->type == &npvert) {	grd=2; }
+		      else { if (ent->type == &npleft) { grd=3; }
+			else { if (ent->type == &nprght) { grd=4; } 
+			  else { if (ent->type == &npplus) { grd=5; } 
+			    else { if (ent->type == &nelnsq) { grd=6; } 
+			      else { if (ent->type == &nother) { grd=7; }
+				else { grd=-1; } } } } } } } }
+		  if (do_what == p_list) {
+		    fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
+		    {
+		      int i;
+		      for (i=0;i<9;i++) 
+			fprintf(stdout," %d",ev->data[i]);
+		      fprintf(stdout,"\n");
+		    }
+		  } else {
+		    fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
+		  }
+		}
 	}
 }
 
@@ -358,13 +370,10 @@ make_hist(event, split, num, ev, rst, sty)
  *  Dump the basic calibration file header
  */
 static void
-dump_head(sfile, event, split, total)
-	char	*sfile;
-	int	event, split, total;
+dump_head(char *sfile, int event, int split, int total)
 {
 	FILE	*fp;
 	char	line[NAMLEN], *c;
-	char	*getcwd();
 
 	(void)fprintf(stdout, "!\n");
 	(void)fprintf(stdout, "!  QDP Basic Calibration File\n");
@@ -400,11 +409,11 @@ dump_head(sfile, event, split, total)
 	(void)fprintf(stdout, "!\n");
 	while (fgets(line, NAMLEN-1, fp)) {
 		if (line[0] == '#') continue;
-		(void)fprintf(stdout, "!  %s", line);
+		fprintf(stdout, "!  %s", line);
 		if (!strncmp(line, "evlist  = ", 10)) {
-			(void)strcpy(efile, &line[10]);
-			for (c = efile; *c; c++)
-				if (*c == '\t') *c = ' '; 
+		  strcpy(efile, &line[10]);
+		  for (c = efile; *c; c++)
+		    if (*c == '\t') *c = ' '; 
 		}
 	}
 	(void)fclose(fp);
@@ -414,9 +423,7 @@ dump_head(sfile, event, split, total)
  *  Dump the QDP header histogram table
  */
 static void
-dump_hist(event, split, sfile)
-	char	*sfile;
-	int	event, split;
+dump_hist(int event, int split, char *sfile)
 {
 	register int	i;
 
@@ -461,3 +468,72 @@ dump_hist(event, split, sfile)
 			histo[0][i], histo[1][i], histo[2][i], histo[3][i],
 			histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
 }
+
+
+#if 0
+int
+main(int argc, char **argv)
+{
+	int	event, split, num, tot = 0;
+	char	*sfile, def_style = '1', *style = &def_style;
+	double	reset = 0;
+	char    *calc;
+
+	if (argc == 1) {	/* for diagnostic purposes */
+		prep_hist();
+		dump_table();
+		return(0);
+	}
+	if (argc < 3 || argc > 6) { usage(); return(1); }
+	if (--argc) {
+	  event = atoi(*++argv);
+	  if (--argc) {
+	    split = atoi(*++argv);
+	    if (--argc) {
+	      calc=*++argv;
+	      if (strcmp(calc,"p9")==0) {
+		do_what=p_9;
+	      } else {
+		if (strcmp(calc,"p17")==0) {
+		  do_what=p_17;
+		} else {
+		  if (strcmp(calc,"p35")==0) {
+		    do_what=p_35;
+		  } else {
+		    if (strcmp(calc,"p1357")==0) {
+		      do_what=p_1357;
+		    } else {
+		      if (strcmp(calc,"plist")==0) {
+			do_what=p_list;
+		      } else {
+			fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
+			exit(1);
+		      }
+		    }
+		  }
+		}
+	      }
+	      if (--argc) {
+		sfile = *++argv;
+		if (--argc) {
+		  reset = atof(*++argv);
+		  if (--argc) {
+		    style = *++argv;
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+
+	prep_hist();
+	while ((num = read(0, (char *)eventdata,
+		EVENTS*sizeof(data_str))/sizeof(data_str)) > 0) {
+		tot += num;
+		make_classification(event, split, num, eventdata, reset, style);
+	}
+	//	dump_head(sfile, event, split, tot);
+	//	dump_hist(event, split, sfile);
+	return(0);
+}
+#endif
