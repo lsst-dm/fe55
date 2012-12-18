@@ -357,7 +357,7 @@ make_classification(int event,
 		    {
 		      int i;
 		      for (i=0;i<9;i++) 
-			fprintf(stdout," %d",ev->data[i]);
+			fprintf(stdout," %g", ev->data[i]);
 		      fprintf(stdout,"\n");
 		    }
 		  } else {

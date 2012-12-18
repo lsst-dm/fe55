@@ -7,7 +7,9 @@
 struct data_str {
     char mode;
     int framenum;
-    short chipnum,x,y,data[9];
+    int chipnum;
+    int x,y;
+    float data[9];
 };
 
 #endif

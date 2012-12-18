@@ -316,7 +316,7 @@ make_classification(calctype do_what,
 		    fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
 		    {
 		      for (int i=0;i<9;i++) 
-			fprintf(stdout," %d",ev->data[i]);
+			fprintf(stdout," %f",ev->data[i]);
 		      fprintf(stdout,"\n");
 		    }
 		  } else {
