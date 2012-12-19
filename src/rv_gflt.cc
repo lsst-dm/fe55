@@ -21,12 +21,13 @@
 #include <stddef.h>
 #include <string.h>
 #include <limits>
+#include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
 class HistogramTable : public HistogramTableBase {
 public:
     HistogramTable(const int filter) : HistogramTableBase(filter) {}
-    virtual int process_event(data_str *ev, int event, int split, RESET_STYLES sty, double rst);
+    virtual int process_event(const data_str *ev, int event, int split, RESET_STYLES sty, double rst);
 };
 
 /*
@@ -34,7 +35,7 @@ public:
  */
 int
 HistogramTable::process_event(
-        data_str *ev,
+        const data_str *ev,
         int event,
         int split,
         RESET_STYLES sty,
@@ -46,19 +47,22 @@ HistogramTable::process_event(
      */
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
     if (ev->data[4] < event) { nbevth++; return 0; }
+
+    short phe[9];
+    std::copy(ev->data, ev->data + 9, phe);
     /*
      *  Insert the reset clock correction
      */
     switch (sty) {
       case T6:
-        ev->data[7] -= ev->data[6]*rst;
-        ev->data[4] -= ev->data[3]*rst;
-        ev->data[1] -= ev->data[0]*rst; // fall through
+        phe[7] -= phe[6]*rst;
+        phe[4] -= phe[3]*rst;
+        phe[1] -= phe[0]*rst; // fall through
       case T3:
-        ev->data[8] -= ev->data[7]*rst;
-        ev->data[2] -= ev->data[1]*rst; // fall through
+        phe[8] -= phe[7]*rst;
+        phe[2] -= phe[1]*rst; // fall through
       case T1:
-        ev->data[5] -= ev->data[4]*rst;
+        phe[5] -= phe[4]*rst;
         break;
       case TNONE:
         break;
@@ -67,12 +71,11 @@ HistogramTable::process_event(
      *  Characterize event & accumulate most of pha
      */
     unsigned char map = 0;
-    short phe[9];
 
     sum = 0;                            // in HistogramTableBase
     for (int j = 0; j < 9; j++) {
-        const short phj = ev->data[j];
-        phe[j] = phj;
+        const short phj = phe[j];
+
         if (phj < split && j != 4) {
             phe[j]=0;
             continue;

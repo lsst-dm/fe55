@@ -10,7 +10,7 @@ public:
     HistogramTableBase(const int filter=0x0);
     virtual ~HistogramTableBase() {}
     void dump_table() const;
-    virtual int process_event(data_str *ev, int event, int split,
+    virtual int process_event(const data_str *ev, int event, int split,
                               RESET_STYLES sty=TNONE, double rst=0.0) = 0;
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
