@@ -1,5 +1,4 @@
-// -*- lsst-c++ -*-
-
+// -*- LSST-C++ -*-
 /* 
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
@@ -22,34 +21,30 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
  
-%define rasmussenLib_DOCSTRING
-"
-Various swigged-up C++ classes for rasmussen
-"
-%enddef
 
-%feature("autodoc", "1");
-%module(package="rasmussenLib", docstring=rasmussenLib_DOCSTRING) rasmussenLib
+/**
+ * @file
+ */
 
-%pythonnondynamic;
-%naturalvar;  // use const reference typemaps
+#include "lsst/meas/algorithms/Measure.h"
+#include "lsst/meas/algorithms/CentroidControl.h"
 
-%include "lsst/p_lsstSwig.i"
+namespace lsst {
+namespace rasmussen {
 
-%lsst_exceptions()
+class Fe55Control : public lsst::meas::algorithms::CentroidControl {
+public:
+    Fe55Control(int dY_=1) : lsst::meas::algorithms::CentroidControl("centroid.silly"), dY(dY_) {}
+    LSST_CONTROL_FIELD(dY, int, "Number of pixels to offset the centroid in y");
+private:
+    virtual PTR(lsst::meas::algorithms::AlgorithmControl) _clone() const {
+        return boost::make_shared<Fe55Control>(*this);
+    }
 
-%{
-#include "lsst/pex/logging.h"
-#include "lsst/afw.h"
-#include "lsst/meas/algorithms.h"
-%}
+    virtual PTR(lsst::meas::algorithms::Algorithm) _makeAlgorithm(
+        afw::table::Schema & schema,         
+        PTR(daf::base::PropertyList) const & metadata,
+        lsst::meas::algorithms::AlgorithmControlMap const & other) const;
+};
 
-%import "lsst/meas/algorithms/algorithmsLib.i"
-
-%shared_ptr(lsst::rasmussen::Fe55Control)
-
-%{
-#include "lsst/rasmussen/fe55.h"
-%}
-
-%include "lsst/rasmussen/fe55.h"
+}}
