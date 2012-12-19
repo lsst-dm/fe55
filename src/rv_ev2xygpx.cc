@@ -342,15 +342,6 @@ HistogramTable::make_classification(
     } else {
         grd=-1;
     }
-    
-    if (_do_what == p_list) {
-        fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
-        for (int i=0;i<9;i++) 
-            fprintf(stdout," %f",ev->data[i]);
-        fprintf(stdout,"\n");
-    } else {
-        fprintf(stdout,"%d %d %d %d %g %d\n",ev->x,ev->y,grd,sum,ev->data[4],p9);
-    }
 
     return 1;
 }
@@ -457,7 +448,19 @@ main(int argc, char **argv)
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                table.make_classification(ev, event, split, style, reset);
+                if (table.make_classification(ev, event, split, style, reset)) {
+                    if (do_what == HistogramTable::p_list) {
+                        fprintf(stdout,"%d %d %d %d p:", ev->x, ev->y, table.grd, table.sum);
+                        for (int i=0;i<9;i++) {
+                            fprintf(stdout," %f",ev->data[i]);
+                        }
+                        fprintf(stdout,"\n");
+                    } else {
+                        fprintf(stdout,"%d %d %d %d %g %d\n",ev->x,ev->y, table.grd, table.sum,
+                                ev->data[4], table.p9);
+                    }
+                    
+                }
             }
 	}
 	return(0);
