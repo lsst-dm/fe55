@@ -262,23 +262,25 @@ HistogramTableBase::finishEventProcessing(const data_str *ev,
 void
 HistogramTableBase::dump_table() const
 {
-	register int		i, j;
+    register int		i, j;
 
-	for (i = 0; i < NMAP; i++) {
+    for (i = 0; i < NMAP; i++) {
 
-		if ( table[i].type == &nsngle )  j = 0;	else
-		if ( table[i].type == &nsplus )  j = 1;	else
+        if ( table[i].type == &nsngle )  j = 0;	else
+            if ( table[i].type == &nsplus )  j = 1;	else
 		if ( table[i].type == &npvert )  j = 2;	else
-		if ( table[i].type == &npleft )  j = 3;	else
-		if ( table[i].type == &nprght )  j = 4;	else
-		if ( table[i].type == &npplus )  j = 5;	else
-		if ( table[i].type == &nelnsq )  j = 6;	else
-		if ( table[i].type == &nother )  j = 7;	else
-						 j = 9;
+                    if ( table[i].type == &npleft )  j = 3;	else
+                        if ( table[i].type == &nprght )  j = 4;	else
+                            if ( table[i].type == &npplus )  j = 5;	else
+                                if ( table[i].type == &nelnsq )  j = 6;	else
+                                    if ( table[i].type == &nother )  j = 7;	else
+                                        j = 9;
 
-		(void)fprintf(stderr, "%d,", j);
-		if (i%16 == 15) (void)fprintf(stderr, "\n");
-	}
+        (void)fprintf(stderr, "%d,", j);
+        if (i%16 == 15) (void)fprintf(stderr, "\n");
+    }
+}
+
 
 /*
  *  Dump the QDP header histogram table
