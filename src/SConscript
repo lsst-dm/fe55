@@ -1,6 +1,7 @@
 # -*- python -*-
-import glob
+import glob, os
 from lsst.sconsUtils import env, scripts
 
 for cfile in glob.glob("rv*.cc"):
-    env.Default(env.Program([cfile, "tables.cc"], CCFLAGS=["-DMAIN"], LIBS=["cfitsio"]))
+    env.Default(env.Program(os.path.splitext(cfile)[0], [cfile, "tables.os"],
+                            CCFLAGS=env["CCFLAGS"] + ["-DMAIN"], LIBS=["cfitsio"]))
