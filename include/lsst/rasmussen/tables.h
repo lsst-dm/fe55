@@ -45,4 +45,33 @@ private:
     char _efile[NAMLEN];                // name of the electronics param file, found in the sfile.  Ughh
 };
 
+/********************************************************************************************************/
+
+class HistogramTableXygpx : public HistogramTableBase {
+public:
+    enum calctype { p_9,
+                    p_17,
+                    p_35,
+                    p_1357,
+                    p_list,             // for the "total"
+    };
+
+    HistogramTableXygpx(calctype do_what=p_list) : HistogramTableBase(), _do_what(do_what) {}
+    virtual int process_event(const data_str *ev, int event, int split, RESET_STYLES sty, double rst);
+
+    // Value set by process_event
+    int p9;
+
+private:
+    const calctype _do_what;
+};
+
+/*********************************************************************************************************/
+
+class HistogramTableGflt : public HistogramTableBase {
+public:
+    HistogramTableGflt(const int filter) : HistogramTableBase(filter) {}
+    virtual int process_event(const data_str *ev, int event, int split, RESET_STYLES sty, double rst);
+};
+
 #endif

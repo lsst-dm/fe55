@@ -24,17 +24,11 @@
 #include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
-class HistogramTable : public HistogramTableBase {
-public:
-    HistogramTable(const int filter) : HistogramTableBase(filter) {}
-    virtual int process_event(const data_str *ev, int event, int split, RESET_STYLES sty, double rst);
-};
-
 /*
  *  Accumulate the num events in the tables
  */
 int
-HistogramTable::process_event(
+HistogramTableGflt::process_event(
         const data_str *ev,
         int event,
         int split,
@@ -157,7 +151,7 @@ main(int argc, char **argv)
 {
 	int	event, split, num, gr, tot = 0;
         int     phlo=0, phhi=-1;
-        HistogramTable::RESET_STYLES style = HistogramTable::TNONE;
+        HistogramTableGflt::RESET_STYLES style = HistogramTableGflt::TNONE;
 	double	reset=0;
 
 	if (argc<2) {
@@ -210,10 +204,10 @@ main(int argc, char **argv)
 
         /* ready for the data now. */
 
-        HistogramTable table(filter);
+        HistogramTableGflt table(filter);
 
         if (phhi < 0) {
-            phhi = HistogramTable::MAXADU;
+            phhi = HistogramTableGflt::MAXADU;
         }
 
         const int EVENTS = 1024;

@@ -19,31 +19,11 @@
 #include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
-namespace {
-class HistogramTable : public HistogramTableBase {
-public:
-    enum calctype { p_9,
-                    p_17,
-                    p_35,
-                    p_1357,
-                    p_list,             // for the "total"
-    };
-
-    HistogramTable(calctype do_what=p_list) : HistogramTableBase(), _do_what(do_what) {}
-    virtual int process_event(const data_str *ev, int event, int split, RESET_STYLES sty, double rst);
-
-    // Value set by process_event
-    int p9;
-
-private:
-    const calctype _do_what;
-};
-
 /*
  *  Accumulate the num events in the tables
  */
 int
-HistogramTable::process_event(
+HistogramTableXygpx::process_event(
         const data_str *ev,
         int event,
         int split,
@@ -121,7 +101,6 @@ HistogramTable::process_event(
     }
     return finishEventProcessing(ev, phe, map);
 }
-}
 
 #if defined(MAIN)
 /*
@@ -170,20 +149,20 @@ main(int argc, char **argv)
     }
 
 	int	event, split, num, tot = 0;
-        HistogramTable::RESET_STYLES style = HistogramTable::T1;
+        HistogramTableXygpx::RESET_STYLES style = HistogramTableXygpx::T1;
 
 	const char *sfile = "unknown";
 	double	reset = 0;
 	char    *calc;
 
 	if (argc == 1) {	/* for diagnostic purposes */
-            HistogramTable table;
+            HistogramTableXygpx table;
             table.dump_table();
             return 0;
 	}
 	if (argc < 3 || argc > 6) { usage(); return 1; }
 
-        HistogramTable::calctype do_what = ev2pcf ? HistogramTable::p_list : HistogramTable::p_9;
+        HistogramTableXygpx::calctype do_what = ev2pcf ? HistogramTableXygpx::p_list : HistogramTableXygpx::p_9;
 	if (--argc > 0) {
 	  event = atoi(*++argv);
 	  if (--argc > 0) {
@@ -191,15 +170,15 @@ main(int argc, char **argv)
 	    if (--argc > 0) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-                  do_what=HistogramTable::p_9;
+                  do_what=HistogramTableXygpx::p_9;
 	      } else if (strcmp(calc,"p17")==0) {
-		  do_what=HistogramTable::p_17;
+		  do_what=HistogramTableXygpx::p_17;
               } else if (strcmp(calc,"p35")==0) {
-                  do_what=HistogramTable::p_35;
+                  do_what=HistogramTableXygpx::p_35;
               } else if (strcmp(calc,"p1357")==0) {
-                  do_what=HistogramTable::p_1357;
+                  do_what=HistogramTableXygpx::p_1357;
               } else if (strcmp(calc,"plist")==0) {
-                  do_what=HistogramTable::p_list;
+                  do_what=HistogramTableXygpx::p_list;
               } else {
                   fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
                   exit(1);
@@ -212,9 +191,9 @@ main(int argc, char **argv)
                       const char *styleStr = *++argv;
                                             
                       switch (*styleStr) {
-                        case '1': style = HistogramTable::T1; break;
-                        case '3': style = HistogramTable::T3; break;
-                        case '6': style = HistogramTable::T6; break;
+                        case '1': style = HistogramTableXygpx::T1; break;
+                        case '3': style = HistogramTableXygpx::T3; break;
+                        case '6': style = HistogramTableXygpx::T6; break;
                         default:
                           fprintf(stderr,"Invalid reset style: %s\n exiting..", styleStr);
                           return 1;
@@ -226,7 +205,7 @@ main(int argc, char **argv)
 	  }
 	}
 
-        HistogramTable table(do_what);
+        HistogramTableXygpx table(do_what);
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
@@ -237,7 +216,7 @@ main(int argc, char **argv)
                     if (ev2pcf) {
                         continue;
                     }
-                    if (do_what == HistogramTable::p_list) {
+                    if (do_what == HistogramTableXygpx::p_list) {
                         fprintf(stdout,"%d %d %d %d p:", ev->x, ev->y, table.grd, table.sum);
                         for (int i=0;i<9;i++) {
                             fprintf(stdout," %f",ev->data[i]);

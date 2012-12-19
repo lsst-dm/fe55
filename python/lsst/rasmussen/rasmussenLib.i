@@ -50,6 +50,8 @@ Various swigged-up C++ classes for rasmussen
 
 %{
 #include "lsst/rasmussen/fe55.h"
+#include "lsst/rasmussen/tables.h"
 %}
 
 %include "lsst/rasmussen/fe55.h"
+%include "lsst/rasmussen/tables.h"
