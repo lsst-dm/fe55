@@ -115,56 +115,6 @@ HistogramTable::HistogramTable(const int filter // bitmask for which grades to a
     
     bzero((char *)histo, sizeof(histo));
 
-    /* make up the array of acceptable maps. */
-
-    for (int i = 0; i < NMAP; i++) accmap[i]=0;
-    nacc=0;
-
-    if (filter & 0x01) {
-        for (int k=0;k<sizeof(sngle);k++) accmap[nacc+k]=sngle[k];
-        nacc+=sizeof(sngle); 
-    }
-    if (filter & 0x02) {
-        for (int k=0;k<sizeof(splus);k++) accmap[nacc+k]=splus[k];
-        nacc+=sizeof(splus); 
-    }
-    if (filter & 0x04) {
-        for (int k=0;k<sizeof(pvert);k++) accmap[nacc+k]=pvert[k];
-        nacc+=sizeof(pvert); 
-    }
-    if (filter & 0x08) {
-        for (int k=0;k<sizeof(pleft);k++) accmap[nacc+k]=pleft[k];
-        nacc+=sizeof(pleft); 
-    }
-    if (filter & 0x10) {
-        for (int k=0;k<sizeof(prght);k++) accmap[nacc+k]=prght[k];
-        nacc+=sizeof(prght); 
-    }
-    if (filter & 0x20) {
-        for (int k=0;k<sizeof(pplus);k++) accmap[nacc+k]=pplus[k];
-        nacc+=sizeof(pplus); 
-    }
-    if (filter & 0x40) {
-        for (int k=0;k<sizeof(elnsq);k++) accmap[nacc+k]=elnsq[k];
-        nacc+=sizeof(elnsq); 
-    }
-    /* need to make a `not others' array. */
-    nnoto=0;
-    for (int k=0;k<sizeof(sngle);k++) notomap[nnoto+k]=sngle[k];
-    nnoto+=sizeof(sngle);
-    for (int k=0;k<sizeof(splus);k++) notomap[nnoto+k]=splus[k];
-    nnoto+=sizeof(splus);
-    for (int k=0;k<sizeof(pvert);k++) notomap[nnoto+k]=pvert[k];
-    nnoto+=sizeof(pvert);
-    for (int k=0;k<sizeof(pleft);k++) notomap[nnoto+k]=pleft[k];
-    nnoto+=sizeof(pleft);
-    for (int k=0;k<sizeof(prght);k++) notomap[nnoto+k]=prght[k];
-    nnoto+=sizeof(prght);
-    for (int k=0;k<sizeof(pplus);k++) notomap[nnoto+k]=pplus[k];
-    nnoto+=sizeof(pplus);
-    for (int k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
-    nnoto+=sizeof(elnsq);
-
     /* load the sngle events into table GRADE 0 */
     for (int i = 0; i < sizeof(sngle); i++) {
         look_up *t = table + sngle[i];
@@ -245,6 +195,55 @@ HistogramTable::HistogramTable(const int filter // bitmask for which grades to a
          }
         */
     }
+    /* make up the array of acceptable maps. */
+
+    for (int i = 0; i < NMAP; i++) accmap[i]=0;
+    nacc=0;
+
+    if (filter & 0x01) {
+        for (int k=0;k<sizeof(sngle);k++) accmap[nacc+k]=sngle[k];
+        nacc+=sizeof(sngle); 
+    }
+    if (filter & 0x02) {
+        for (int k=0;k<sizeof(splus);k++) accmap[nacc+k]=splus[k];
+        nacc+=sizeof(splus); 
+    }
+    if (filter & 0x04) {
+        for (int k=0;k<sizeof(pvert);k++) accmap[nacc+k]=pvert[k];
+        nacc+=sizeof(pvert); 
+    }
+    if (filter & 0x08) {
+        for (int k=0;k<sizeof(pleft);k++) accmap[nacc+k]=pleft[k];
+        nacc+=sizeof(pleft); 
+    }
+    if (filter & 0x10) {
+        for (int k=0;k<sizeof(prght);k++) accmap[nacc+k]=prght[k];
+        nacc+=sizeof(prght); 
+    }
+    if (filter & 0x20) {
+        for (int k=0;k<sizeof(pplus);k++) accmap[nacc+k]=pplus[k];
+        nacc+=sizeof(pplus); 
+    }
+    if (filter & 0x40) {
+        for (int k=0;k<sizeof(elnsq);k++) accmap[nacc+k]=elnsq[k];
+        nacc+=sizeof(elnsq); 
+    }
+    /* need to make a `not others' array. */
+    nnoto=0;
+    for (int k=0;k<sizeof(sngle);k++) notomap[nnoto+k]=sngle[k];
+    nnoto+=sizeof(sngle);
+    for (int k=0;k<sizeof(splus);k++) notomap[nnoto+k]=splus[k];
+    nnoto+=sizeof(splus);
+    for (int k=0;k<sizeof(pvert);k++) notomap[nnoto+k]=pvert[k];
+    nnoto+=sizeof(pvert);
+    for (int k=0;k<sizeof(pleft);k++) notomap[nnoto+k]=pleft[k];
+    nnoto+=sizeof(pleft);
+    for (int k=0;k<sizeof(prght);k++) notomap[nnoto+k]=prght[k];
+    nnoto+=sizeof(prght);
+    for (int k=0;k<sizeof(pplus);k++) notomap[nnoto+k]=pplus[k];
+    nnoto+=sizeof(pplus);
+    for (int k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
+    nnoto+=sizeof(elnsq);
 }
 
 /*
