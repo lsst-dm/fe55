@@ -9,7 +9,6 @@ struct data_str {
     int framenum;
     int chipnum;
     int x,y;
-    int keep;
     char mode;
 };
 
