@@ -4,4 +4,10 @@ medpict_lsst -b -f e -c -e ~/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_200
 
 medpict_lsst -b -f e -c -e ~/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz |
    rv_gflt 30 10 -g 0 2 3 4 6 |
-   bin/rv_ev2pcf 30 10
+   bin/rv_ev2pcf 30 10 > foo.out
+
+(or equivalently:
+medpict_lsst -b -f e -c -e ~/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz |
+   rv_gflt 30 10 -g 0 2 3 4 6 |
+   src/rv_ev2xygpx --ev2pcf 30 10 > foo.out
+)
