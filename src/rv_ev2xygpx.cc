@@ -30,10 +30,10 @@ public:
                     p_list,             // for the "total"
     };
 
-    HistogramTable();
+    HistogramTable(calctype=p_list);
     void dump_table();
-    int make_classification(calctype do_what, data_str *ev,
-                            int event, int split, RESET_STYLES sty, double rst);
+    int make_classification(data_str *ev,
+                            int event, int split, RESET_STYLES sty=TNONE, double rst=0.0);
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
@@ -41,6 +41,10 @@ public:
     short	min_adu, max_adu;
     short	min_2ct, max_2ct;
     short	xn, xx, yn, yx;
+    // Values set by make_classification
+    int grd, p9;
+    int sum;                            // should be float?  But it's used as an array index
+
 private:
     struct look_up {
         int *type;
@@ -49,6 +53,7 @@ private:
     } table[NMAP];
 
     int histo[8][MAXADU];
+    const calctype _do_what;
 };
 
 /*
@@ -82,7 +87,7 @@ HistogramTable::dump_table()
  *  and which extra pixels should be included in the summed pha,
  *  which only occurs for the L, Q and Other grades.
  */
-HistogramTable::HistogramTable()
+HistogramTable::HistogramTable(calctype do_what) : _do_what(do_what)
 {
     static
     const int extra[][4] = {  {4,4,4,4},
@@ -217,7 +222,6 @@ HistogramTable::HistogramTable()
  */
 int
 HistogramTable::make_classification(
-        calctype do_what,
         data_str *ev,
         int event,
         int split,
@@ -226,9 +230,7 @@ HistogramTable::make_classification(
                                    )
 {
     // in this routine we write out the x,y,grade,ph for each event.
-    register unsigned char	map;
-    register int		j;
-    short			phj, sum, phe[9], hsum;
+    short			phj, phe[9], hsum;
 
     /*
      *  Get some gross event parameters
@@ -255,12 +257,14 @@ HistogramTable::make_classification(
     /*
      *  Characterize event & accumulate most of pha
      */
-    const int p4 = ev->data[4];
-    int p9 = 0;
-    for (j = 0, map = 0, sum = 0; j < 9; j++) {
+    p9 = 0;
+    sum = 0;
+
+    unsigned char map = 0;
+    for (int j = 0; j < 9; j++) {
         phe[j] = phj = ev->data[j];
 
-        switch (do_what) {
+        switch (_do_what) {
           case p_9:
             p9 += phj;
             break;
@@ -298,7 +302,7 @@ HistogramTable::make_classification(
      */
     look_up *const ent = &table[map];
     const int *xtr = ent->extr;
-    for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+    for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
     /*
      *  Accumulate statistics and various bounds
      */
@@ -318,36 +322,34 @@ HistogramTable::make_classification(
         if (sum > max_2ct) max_2ct = sum;
         if (sum < min_2ct) min_2ct = sum;
     }
-    {
-        int grd;
-        if (ent->type == &nsngle) {
-            grd=0;
-        } else if (ent->type == &nsplus) {
-            grd=1;
-        } else if (ent->type == &npvert) {
-            grd=2;
-        } else if (ent->type == &npleft) {
-            grd=3;
-        } else if (ent->type == &nprght) {
-            grd=4;
-        } else if (ent->type == &npplus) {
-            grd=5;
-        } else if (ent->type == &nelnsq) {
-            grd=6;
-        } else if (ent->type == &nother) {
-            grd=7;
-        } else {
-            grd=-1;
-        }
-        
-        if (do_what == p_list) {
-            fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
-            for (int i=0;i<9;i++) 
-                fprintf(stdout," %f",ev->data[i]);
-            fprintf(stdout,"\n");
-        } else {
-            fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
-        }
+
+    if (ent->type == &nsngle) {
+        grd=0;
+    } else if (ent->type == &nsplus) {
+        grd=1;
+    } else if (ent->type == &npvert) {
+        grd=2;
+    } else if (ent->type == &npleft) {
+        grd=3;
+    } else if (ent->type == &nprght) {
+        grd=4;
+    } else if (ent->type == &npplus) {
+        grd=5;
+    } else if (ent->type == &nelnsq) {
+        grd=6;
+    } else if (ent->type == &nother) {
+        grd=7;
+    } else {
+        grd=-1;
+    }
+    
+    if (_do_what == p_list) {
+        fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
+        for (int i=0;i<9;i++) 
+            fprintf(stdout," %f",ev->data[i]);
+        fprintf(stdout,"\n");
+    } else {
+        fprintf(stdout,"%d %d %d %d %g %d\n",ev->x,ev->y,grd,sum,ev->data[4],p9);
     }
 
     return 1;
@@ -448,14 +450,14 @@ main(int argc, char **argv)
 	  }
 	}
 
-        HistogramTable table;
+        HistogramTable table(do_what);
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                table.make_classification(do_what, ev, event, split, style, reset);
+                table.make_classification(ev, event, split, style, reset);
             }
 	}
 	return(0);
