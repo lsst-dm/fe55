@@ -18,9 +18,9 @@ public:
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
     int		ev_min, xav, yav;
-    short	min_adu, max_adu;
-    short	min_2ct, max_2ct;
-    short	xn, xx, yn, yx;
+    int		min_adu, max_adu;
+    int		min_2ct, max_2ct;
+    int		xn, xx, yn, yx;
     // Values set by process_event
     int grd;                            // the event's grade
     int sum;                            // should be float?  But it's used as an array index
