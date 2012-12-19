@@ -262,13 +262,13 @@ HistogramTable::make_classification(
             p9 += phj;
             break;
           case p_1357:
-            if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9 += phj;
+            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) p9 += phj;
             break;
           case p_17:
-            if ((j-1)*(j-7)*(j-4)==0) p9 += phj;
+            if (j == 1 || j == 7 || j == 4) p9 += phj;
             break;
           case p_35:
-            if ((j-3)*(j-5)*(j-4)==0) p9 += phj;
+            if (j == 3 || j == 5 || j == 4) p9 += phj;
             break;
           case p_list:
             break;
