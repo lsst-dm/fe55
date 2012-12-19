@@ -283,17 +283,74 @@ HistogramTableBase::dump_table() const
 
 
 /*
+ *  Dump the basic calibration file header
+ */
+void
+HistogramTableBase::dump_head(const char *sfile, int event, int split, int total)          
+{
+    char	line[NAMLEN], *c;
+    (void)fprintf(stdout, "!\n");
+    (void)fprintf(stdout, "!  QDP Basic Calibration File\n");
+    (void)fprintf(stdout, "!\n");
+    (void)fprintf(stdout, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
+    (void)fprintf(stdout, "!  Source_file  = %s\n", sfile);
+    (void)fprintf(stdout, "!  Event_thresh = %d\n", event);
+    (void)fprintf(stdout, "!  Split_thresh = %d\n", split);
+    //(void)fprintf(stdout, "!  Total_frames = %d\n", cnt);
+    (void)fprintf(stdout, "!  Total_events = %d\n", ntotal);
+    (void)fprintf(stdout, "!  Total_pixels = %d\n", (xx - xn)*(yx - yn));
+    (void)fprintf(stdout, "!\n");
+    (void)fprintf(stdout, "!  Events_below = %d\n", nbevth);
+    (void)fprintf(stdout, "!  Events_above = %d\n", noobnd);
+    (void)fprintf(stdout, "!  Events_input = %d\n", total);
+    (void)fprintf(stdout, "!  PH4_minimum  = %d\n", ev_min);
+    (void)fprintf(stdout, "!  PHS_minimum  = %d\n", min_adu);
+    (void)fprintf(stdout, "!  PHS_Maximum  = %d\n", max_adu);
+    (void)fprintf(stdout, "!  X_Minimum    = %d\n", xn);
+    (void)fprintf(stdout, "!  X_Average    = %d\n", xav/ntotal);
+    (void)fprintf(stdout, "!  X_Maximum    = %d\n", xx);
+    (void)fprintf(stdout, "!  Y_Minimum    = %d\n", yn);
+    (void)fprintf(stdout, "!  Y_Average    = %d\n", yav/ntotal);
+    (void)fprintf(stdout, "!  Y_Maximum    = %d\n", yx);
+
+    (void)fprintf(stdout, "!\n");
+    (void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
+    (void)fprintf(stdout, "!\n");
+
+    if (strcmp(sfile, "unknown") == 0) {
+        return;
+    }
+        
+    FILE * const fp = fopen(sfile, "r");
+    if (fp == NULL) return;
+
+    (void)fprintf(stdout, "!\n");
+    (void)fprintf(stdout, "!  Experimental parameters\n");
+    (void)fprintf(stdout, "!\n");
+    while (fgets(line, NAMLEN-1, fp)) {
+        if (line[0] == '#') continue;
+        (void)fprintf(stdout, "!  %s", line);
+        if (!strncmp(line, "evlist  = ", 10)) {
+            (void)strcpy(_efile, &line[10]);
+            for (c = _efile; *c; c++)
+                if (*c == '\t') *c = ' '; 
+        }
+    }
+    (void)fclose(fp);
+}
+
+/*
  *  Dump the QDP header histogram table
  */
 void
-HistogramTableBase::dump_hist(int event, int split, const char *sfile, const char *efile) const
+HistogramTableBase::dump_hist(int event, int split, const char *sfile) const
 {
     (void)printf("!\n");
     (void)printf("!  QDP Header follows\n");
     (void)printf("!\n");
     (void)printf("lab top Event = %d Split = %d Source = %s\n",
                   event, split, sfile);
-    if (efile[0]) (void)printf("lab file %s", efile);
+    if (_efile[0]) (void)printf("lab file %s", _efile);
     (void)printf("lab g1 Pulse Height (ADU)\n");
     (void)printf("lab rot\n");
     (void)printf("lab g2 N(S)\nlab g3 N(S+)\n");

@@ -123,68 +123,6 @@ HistogramTable::process_event(
 }
 }
 
-
-/*
- *  Dump the basic calibration file header
- */
-const int NAMLEN = 512;
-
-static void
-dump_head(const HistogramTable &table,
-          const char *sfile, char *efile,
-          int event, int split, int total)          
-{
-	FILE	*fp;
-	char	line[NAMLEN], *c;
-
-	(void)fprintf(stdout, "!\n");
-	(void)fprintf(stdout, "!  QDP Basic Calibration File\n");
-	(void)fprintf(stdout, "!\n");
-	(void)fprintf(stdout, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
-	(void)fprintf(stdout, "!  Source_file  = %s\n", sfile);
-	(void)fprintf(stdout, "!  Event_thresh = %d\n", event);
-	(void)fprintf(stdout, "!  Split_thresh = %d\n", split);
-	//(void)fprintf(stdout, "!  Total_frames = %d\n", table.cnt);
-	(void)fprintf(stdout, "!  Total_events = %d\n", table.ntotal);
-	(void)fprintf(stdout, "!  Total_pixels = %d\n", (table.xx - table.xn)*(table.yx - table.yn));
-	(void)fprintf(stdout, "!\n");
-	(void)fprintf(stdout, "!  Events_below = %d\n", table.nbevth);
-	(void)fprintf(stdout, "!  Events_above = %d\n", table.noobnd);
-	(void)fprintf(stdout, "!  Events_input = %d\n", total);
-	(void)fprintf(stdout, "!  PH4_minimum  = %d\n", table.ev_min);
-	(void)fprintf(stdout, "!  PHS_minimum  = %d\n", table.min_adu);
-	(void)fprintf(stdout, "!  PHS_Maximum  = %d\n", table.max_adu);
-	(void)fprintf(stdout, "!  X_Minimum    = %d\n", table.xn);
-	(void)fprintf(stdout, "!  X_Average    = %d\n", table.xav/table.ntotal);
-	(void)fprintf(stdout, "!  X_Maximum    = %d\n", table.xx);
-	(void)fprintf(stdout, "!  Y_Minimum    = %d\n", table.yn);
-	(void)fprintf(stdout, "!  Y_Average    = %d\n", table.yav/table.ntotal);
-	(void)fprintf(stdout, "!  Y_Maximum    = %d\n", table.yx);
-
-	(void)fprintf(stdout, "!\n");
-	(void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
-	(void)fprintf(stdout, "!\n");
-
-        if (strcmp(sfile, "unknown") == 0) {
-            return;
-        }
-        
-	if ((fp = fopen(sfile, "r")) == NULL) return;
-	(void)fprintf(stdout, "!\n");
-	(void)fprintf(stdout, "!  Experimental parameters\n");
-	(void)fprintf(stdout, "!\n");
-	while (fgets(line, NAMLEN-1, fp)) {
-		if (line[0] == '#') continue;
-		(void)fprintf(stdout, "!  %s", line);
-		if (!strncmp(line, "evlist  = ", 10)) {
-			(void)strcpy(efile, &line[10]);
-			for (c = efile; *c; c++)
-				if (*c == '\t') *c = ' '; 
-		}
-	}
-	(void)fclose(fp);
-}
-
 #if defined(MAIN)
 /*
  *  Usage complaint message
@@ -192,7 +130,7 @@ dump_head(const HistogramTable &table,
 static void
 usage()
 {
-	(void)fprintf(stderr, "Usage:  rv_ev2pcf event split sfile ");
+	(void)fprintf(stderr, "Usage:  rv_ev2pcf [--ev2pcf] event split sfile ");
 	(void)fprintf(stderr, "[reset [style]] < evlist > pcfile\n\n");
 	(void)fprintf(stderr, "\tevent  == event threshold\n");
 	(void)fprintf(stderr, "\tsplit  == split threshold\n");
@@ -315,9 +253,8 @@ main(int argc, char **argv)
 	}
 
         if (ev2pcf) {
-            char efile[NAMLEN];
-            dump_head(table, sfile, efile, event, split, tot);
-            table.dump_hist(event, split, sfile, "");
+            table.dump_head(sfile, event, split, tot);
+            table.dump_hist(event, split, sfile);
         }
 
 	return 0;

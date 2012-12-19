@@ -12,7 +12,8 @@ public:
     virtual int process_event(const data_str *ev, int event, int split,
                               RESET_STYLES sty=TNONE, double rst=0.0) = 0;
 
-    void dump_hist(int event, int split, const char *sfile, const char *efile) const;
+    void dump_hist(int event, int split, const char *sfile) const;
+    void dump_head(const char *sfile, int event, int split, int total);
     void dump_table() const;
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
@@ -39,6 +40,9 @@ protected:
     unsigned char accmap[NMAP], notomap[NMAP];
 
     const int _filter;
+private:
+    enum { NAMLEN = 512 };
+    char _efile[NAMLEN];                // name of the electronics param file, found in the sfile.  Ughh
 };
 
 #endif
