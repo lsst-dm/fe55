@@ -5,11 +5,12 @@
    Include file for RV tools software
 */
 struct data_str {
-    char mode;
+    float data[9];
     int framenum;
     int chipnum;
     int x,y;
-    float data[9];
+    int keep;
+    char mode;
 };
 
 #endif
