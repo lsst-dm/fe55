@@ -229,10 +229,9 @@ prep_hist()
 /*
  *  Accumulate the num events in the tables
  */
-static void
+static int
 make_hist(int event,
           int split,
-          int num,
           struct data_str *ev,
           double rst,
           char *sty,
@@ -240,107 +239,103 @@ make_hist(int event,
           int phhi          
          )
 {
-	for ( ; num--; ev++) {
-		/*
-		 *  Get some gross event parameters
-		 */
-		if (ev->data[4] < ev_min) ev_min = ev->data[4];
-		if (ev->data[4] < event) { nbevth++; continue; }
-		/*
-		 *  Insert the reset clock correction
-		 */
-		switch (*sty) {
-			case '6':
-				ev->data[7] -= ev->data[6]*rst;
-				ev->data[4] -= ev->data[3]*rst;
-				ev->data[1] -= ev->data[0]*rst;
-			case '3':
-				ev->data[8] -= ev->data[7]*rst;
-				ev->data[2] -= ev->data[1]*rst;
-			case '1':
-				ev->data[5] -= ev->data[4]*rst;
-		}
-		/*
-		 *  Characterize event & accumulate most of pha
-		 */
-                unsigned char	map = 0;
-                short sum = 0;
-                short phe[9];
+    /*
+     *  Get some gross event parameters
+     */
+    if (ev->data[4] < ev_min) ev_min = ev->data[4];
+    if (ev->data[4] < event) { nbevth++; return 0; }
+    /*
+     *  Insert the reset clock correction
+     */
+    switch (*sty) {
+      case '6':
+        ev->data[7] -= ev->data[6]*rst;
+        ev->data[4] -= ev->data[3]*rst;
+        ev->data[1] -= ev->data[0]*rst;
+      case '3':
+        ev->data[8] -= ev->data[7]*rst;
+        ev->data[2] -= ev->data[1]*rst;
+      case '1':
+        ev->data[5] -= ev->data[4]*rst;
+    }
+    /*
+     *  Characterize event & accumulate most of pha
+     */
+    unsigned char	map = 0;
+    short sum = 0;
+    short phe[9];
                 
-		for (int j = 0; j < 9; j++) {
-		  const short phj = ev->data[j];
-		  phe[j] = phj;
-		  if (phj < split && j != 4) {
-		    phe[j]=0;
-		    continue;
-		  }
-		  switch (j) {
-		  case 0: map |= 0x01; //phe[0]=phj; 
-		    break;
-		  case 1: map |= 0x02; sum += phj; break;
-		  case 2: map |= 0x04; //phe[2]=phj; 
-		    break;
-		  case 3: map |= 0x08; sum += phj; break;
-		  case 4: 	       sum += phj; break;
-		  case 5: map |= 0x10; sum += phj; break;
-		  case 6: map |= 0x20; //phe[6]=phj;
-		    break;
-		  case 7: map |= 0x40; sum += phj; break;
-		  case 8: map |= 0x80; //phe[8]=phj;
-		    break;
-		  }
-		}
+    for (int j = 0; j < 9; j++) {
+        const short phj = ev->data[j];
+        phe[j] = phj;
+        if (phj < split && j != 4) {
+            phe[j]=0;
+            continue;
+        }
+        switch (j) {
+          case 0: map |= 0x01; //phe[0]=phj; 
+            break;
+          case 1: map |= 0x02; sum += phj; break;
+          case 2: map |= 0x04; //phe[2]=phj; 
+            break;
+          case 3: map |= 0x08; sum += phj; break;
+          case 4: 	       sum += phj; break;
+          case 5: map |= 0x10; sum += phj; break;
+          case 6: map |= 0x20; //phe[6]=phj;
+            break;
+          case 7: map |= 0x40; sum += phj; break;
+          case 8: map |= 0x80; //phe[8]=phj;
+            break;
+        }
+    }
 
-		/* 
-		 *  grade is identified. check with filter to see whether
-		 *  to pass it on or not.
-		 *
-		 */
+    /* 
+     *  grade is identified. check with filter to see whether
+     *  to pass it on or not.
+     *
+     */
 
-		for (int j = 0; j < nacc;j++) {
-		    if (map == accmap[j]) {
-                        goto accept_event;
-                    }
-                }
-		if (filter & 0x80) {
-		    for (int j = 0; j< nnoto; j++) {
-                        if (map == notomap[j]) goto nextevent;
-                    }
-		    goto accept_event;
-                }
-	nextevent: 
-		continue;
-	accept_event:
-		/*
-		 *  Finish pha with extra pixels of L, Q, and O events
-		 */
-		look_up *ent = &table[map];
-                const int *xtr = ent->extr;
-		for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
-		/*
-		 *  Accumulate statistics and various bounds
-		 */
-		if (sum >= MAXADU) { noobnd++;  continue; }
-		if (sum > max_adu) max_adu = sum;
-		if (sum < min_adu) min_adu = sum;
-		if (ev->x < xn) xn = ev->x;
-		if (ev->x > xx) xx = ev->x;
-		if (ev->y < yn) yn = ev->y;
-		if (ev->y > yx) yx = ev->y;
-		xav += ev->x;
-		yav += ev->y;
-		ntotal += 1;
-		*ent->type += 1;
-		const int hsum = ent->hist[sum] += 1;
-		if (hsum > 2) {
-			if (sum > max_2ct) max_2ct = sum;
-			if (sum < min_2ct) min_2ct = sum;
-		}
-		if (sum >= phlo && sum < phhi)  {
-                    fwrite(ev, sizeof(data_str), 1, stdout);
-                }
-	}
-        fflush(stdout);
+    for (int j = 0; j < nacc;j++) {
+        if (map == accmap[j]) {
+            goto accept_event;
+        }
+    }
+    if (filter & 0x80) {
+        for (int j = 0; j< nnoto; j++) {
+            if (map == notomap[j]) goto nextevent;
+        }
+        goto accept_event;
+    }
+nextevent: 
+    return 0;
+accept_event:
+    /*
+     *  Finish pha with extra pixels of L, Q, and O events
+     */
+    look_up *ent = &table[map];
+    const int *xtr = ent->extr;
+    for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+    /*
+     *  Accumulate statistics and various bounds
+     */
+    if (sum >= MAXADU) { noobnd++;  return 0; }
+    if (sum > max_adu) max_adu = sum;
+    if (sum < min_adu) min_adu = sum;
+    if (ev->x < xn) xn = ev->x;
+    if (ev->x > xx) xx = ev->x;
+    if (ev->y < yn) yn = ev->y;
+    if (ev->y > yx) yx = ev->y;
+    xav += ev->x;
+    yav += ev->y;
+    ntotal += 1;
+    *ent->type += 1;
+    const int hsum = ent->hist[sum] += 1;
+    if (hsum > 2) {
+        if (sum > max_2ct) max_2ct = sum;
+        if (sum < min_2ct) min_2ct = sum;
+    }
+
+    return (sum >= phlo && sum < phhi) ? 1 : 0;
 }
 
 #if defined(MAIN)
@@ -350,7 +345,7 @@ make_hist(int event,
 static void
 usage()
 {
-        (void)fprintf(stderr, "Usage:  rv_gradefilt event split ");
+	(void)fprintf(stderr, "Usage:  rv_gradefilt event split ");
         (void)fprintf(stderr, "-g glist... < evlist > evlist2\n\n");
         (void)fprintf(stderr, "\tevent   == event threshold\n");
         (void)fprintf(stderr, "\tsplit   == split threshold\n");
@@ -433,8 +428,13 @@ main(int argc, char **argv)
         data_str eventdata[EVENTS];
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
-            make_hist(event, split, num, eventdata, reset, style, phlo, phhi);
-	}
+            for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
+                if (make_hist(event, split, ev, reset, style, phlo, phhi)) {
+                    fwrite(ev, sizeof(data_str), 1, stdout);
+                }
+            }
+        }
+
 	return(0);
 }
 #endif
