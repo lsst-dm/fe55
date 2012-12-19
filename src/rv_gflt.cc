@@ -87,7 +87,9 @@ prep_hist()
     const unsigned char	elnsq[] = { 0x12,0x32,0x50,0x51,0x48,0x4c,0x0a,0x8a,	/* 6 */
                                     0x16,0xd0,0x68,0x0b,0x36,0xd1,0x6c,0x8b };
 
-    unsigned char	other[256] /* = { all of the rest } */;			/* 7 */
+#if 0                                                     // not actually needed as an array
+    unsigned char	other[256] = { all of the rest };			/* 7 */
+#endif
 
     /* zero everything in sight */
     nsngle = nsplus = npvert = npleft = nprght = npplus =
@@ -206,7 +208,7 @@ prep_hist()
     }
 
     /* load the other events into table GRADE 7 */
-    for (int i = 0; i < sizeof(other); i++) {
+    for (int i = 0; i < sizeof(table)/sizeof(table[0]); i++) {
         look_up *t = table + i;
         if (t->type) continue;		/* already loaded */
         t->type = &nother;
