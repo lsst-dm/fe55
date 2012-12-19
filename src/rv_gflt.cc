@@ -25,32 +25,22 @@
 
 class HistogramTable : public HistogramTableBase {
 public:
-    enum RESET_STYLES { TNONE, T1, T3, T6, };
-
     HistogramTable(const int filter) : HistogramTableBase(filter) {}
-
-    int make_hist(data_str *ev,
-                  int event, int split, int phlo=0, int phhi=0, RESET_STYLES sty=TNONE, double rst=0.0);
+    virtual int process_event(data_str *ev, int event, int split, RESET_STYLES sty, double rst);
 };
 
 /*
  *  Accumulate the num events in the tables
  */
 int
-HistogramTable::make_hist(
-	  data_str *ev,
-	  int event,
-          int split,
-          int phlo,
-	  int phhi,
-          RESET_STYLES sty,
-          double rst
-         )
+HistogramTable::process_event(
+        data_str *ev,
+        int event,
+        int split,
+        RESET_STYLES sty,
+        double rst
+                             )
 {
-    if (phhi < 0) {
-        phhi = MAXADU;
-    }
-
     /*
      *  Get some gross event parameters
      */
@@ -76,10 +66,10 @@ HistogramTable::make_hist(
     /*
      *  Characterize event & accumulate most of pha
      */
-    unsigned char	map = 0;
-    short sum = 0;
+    unsigned char map = 0;
     short phe[9];
-                
+
+    sum = 0;                            // in HistogramTableBase
     for (int j = 0; j < 9; j++) {
         const short phj = ev->data[j];
         phe[j] = phj;
@@ -243,13 +233,20 @@ main(int argc, char **argv)
         /* ready for the data now. */
 
         HistogramTable table(filter);
+
+        if (phhi < 0) {
+            phhi = HistogramTable::MAXADU;
+        }
+
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.make_hist(ev, event, split, phlo, phhi, style, reset)) {
-                    fwrite(ev, sizeof(data_str), 1, stdout);
+                if (table.process_event(ev, event, split, style, reset)) {
+                    if (table.sum >= phlo && table.sum < phhi) {
+                        fwrite(ev, sizeof(data_str), 1, stdout);
+                    }
                 }
             }
         }

@@ -28,14 +28,11 @@ public:
                     p_list,             // for the "total"
     };
 
-
     HistogramTable(calctype do_what=p_list) : HistogramTableBase(), _do_what(do_what) {}
-    int make_classification(data_str *ev,
-                            int event, int split, RESET_STYLES sty=TNONE, double rst=0.0);
+    virtual int process_event(data_str *ev, int event, int split, RESET_STYLES sty, double rst);
 
-    // Values set by make_classification
-    int grd, p9;
-    int sum;                            // should be float?  But it's used as an array index
+    // Value set by process_event
+    int p9;
 
 private:
     const calctype _do_what;
@@ -45,17 +42,14 @@ private:
  *  Accumulate the num events in the tables
  */
 int
-HistogramTable::make_classification(
+HistogramTable::process_event(
         data_str *ev,
         int event,
         int split,
         RESET_STYLES sty,
         double rst
-                                   )
+                             )
 {
-    // in this routine we write out the x,y,grade,ph for each event.
-    short			phj, phe[9], hsum;
-
     /*
      *  Get some gross event parameters
      */
@@ -81,12 +75,14 @@ HistogramTable::make_classification(
     /*
      *  Characterize event & accumulate most of pha
      */
-    p9 = 0;
-    sum = 0;
-
     unsigned char map = 0;
+    short phe[9];
+
+    p9 = 0;                             // in HistogramTableBase
+    sum = 0;                            // in HistogramTableBase
     for (int j = 0; j < 9; j++) {
-        phe[j] = phj = ev->data[j];
+        const short phj = ev->data[j];
+        phe[j] = phj;
 
         switch (_do_what) {
           case p_9:
@@ -206,6 +202,10 @@ usage()
 	(void)fprintf(stderr, "lookup grade table is dumped to stderr.\n");
 }
 
+
+/*
+ * Write out the x,y,grade,ph for each acceptable event.
+ */
 int
 main(int argc, char **argv)
 {
@@ -273,7 +273,7 @@ main(int argc, char **argv)
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.make_classification(ev, event, split, style, reset)) {
+                if (table.process_event(ev, event, split, style, reset)) {
                     if (do_what == HistogramTable::p_list) {
                         fprintf(stdout,"%d %d %d %d p:", ev->x, ev->y, table.grd, table.sum);
                         for (int i=0;i<9;i++) {

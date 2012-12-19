@@ -8,7 +8,10 @@ public:
     enum RESET_STYLES { TNONE, T1, T3, T6, };
 
     HistogramTableBase(const int filter=0x0);
+    virtual ~HistogramTableBase() {}
     void dump_table() const;
+    virtual int process_event(data_str *ev, int event, int split,
+                              RESET_STYLES sty=TNONE, double rst=0.0) = 0;
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
@@ -16,6 +19,9 @@ public:
     short	min_adu, max_adu;
     short	min_2ct, max_2ct;
     short	xn, xx, yn, yx;
+    // Values set by process_event
+    int grd;                            // the event's grade
+    int sum;                            // should be float?  But it's used as an array index
 protected:
     enum { NMAP = 256 };
     struct look_up {
