@@ -12,10 +12,8 @@
  *	Modified for new SIS grades	gbc	02 Dec 1992
  *	Modified for Reset correction	gbc	19 Mar 1993
  */
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <limits>
+#include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
 /*
@@ -69,8 +67,8 @@ HistogramTableBase::HistogramTableBase(const int filter) : _filter(filter)
     min_2ct = MAXADU; max_2ct = 0;
     xn = yn = std::numeric_limits<int>::max();
     xx = yx = 0;
-    
-    bzero((char *)histo, sizeof(histo));
+
+    std::fill(&histo[0][0], &histo[0][0] + 8*MAXADU, 0);
 
     /* load the sngle events into table GRADE 0 */
     for (int i = 0; i < sizeof(sngle); i++) {
