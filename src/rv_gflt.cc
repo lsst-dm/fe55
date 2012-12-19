@@ -295,20 +295,23 @@ make_hist(int event,
      *
      */
 
+    bool accept = false;
     for (int j = 0; j < nacc;j++) {
         if (map == accmap[j]) {
-            goto accept_event;
+            accept = true;
+            break;
         }
     }
-    if (filter & 0x80) {
-        for (int j = 0; j< nnoto; j++) {
-            if (map == notomap[j]) goto nextevent;
+    if (!accept && filter & 0x80) {
+        for (int j = 0; j < nnoto; j++) {
+            if (map == notomap[j]) return 0;
         }
-        goto accept_event;
+        accept = true;
     }
-nextevent: 
-    return 0;
-accept_event:
+
+    if (!accept) {
+        return 0;
+    }
     /*
      *  Finish pha with extra pixels of L, Q, and O events
      */
