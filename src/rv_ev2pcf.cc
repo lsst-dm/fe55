@@ -426,7 +426,7 @@ dump_hist(int event, int split, char *sfile)
 }
 
 
-#if 0
+#if defined(MAIN)
 int
 main(int argc,
      char **argv

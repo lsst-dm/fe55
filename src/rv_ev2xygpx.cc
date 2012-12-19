@@ -326,7 +326,7 @@ make_classification(calctype do_what,
 	}
 }
 
-#if 1
+#if defined(MAIN)
 /*
  *  Usage complaint message
  */

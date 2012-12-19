@@ -343,7 +343,7 @@ make_hist(int event,
         fflush(stdout);
 }
 
-#if 1
+#if defined(MAIN)
 /*
  *  Usage complaint message
  */
