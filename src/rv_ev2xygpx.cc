@@ -112,7 +112,7 @@ HistogramTable::process_event(
           case 1: map |= 0x02; sum += phj; break;
           case 2: map |= 0x04;           ; break;
           case 3: map |= 0x08; sum += phj; break;
-          case 4: 	     sum += phj; break;
+          case 4: 	       sum += phj; break;
           case 5: map |= 0x10; sum += phj; break;
           case 6: map |= 0x20;           ; break;
           case 7: map |= 0x40; sum += phj; break;
