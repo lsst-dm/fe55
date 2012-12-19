@@ -3,4 +3,4 @@ import glob
 from lsst.sconsUtils import env, scripts
 
 for cfile in glob.glob("rv*.cc"):
-    env.Default(env.Program(cfile, CCFLAGS=["-DMAIN"], LIBS=["cfitsio"]))
+    env.Default(env.Program([cfile, "tables.cc"], CCFLAGS=["-DMAIN"], LIBS=["cfitsio"]))
