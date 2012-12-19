@@ -15,39 +15,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <limits>
 #include "lsst/rasmussen/rv.h"
 
-namespace {
-    const int MAXADU = 4096;
-    const int NMAP = 256;
-
-    struct look_up {
-        int *type;
-        const int *extr;
-        int *hist;
-    } table[NMAP];
-
-    int		nsngle,nsplus,npvert,npleft,nprght,npplus,
-		nelnsq,nother,ntotal,noobnd,nbevth;
-    int		ev_min = MAXADU, xav = 0, yav = 0;
-    short	min_adu = MAXADU, max_adu = 0;
-    short	min_2ct = MAXADU, max_2ct = 0;
-    short	xn = 512, xx = 0, yn = 512, yx = 0;
-
+class HistogramTable {
+    enum { NMAP = 256 };
+public:
+    enum {MAXADU = 4096};
     enum calctype { p_9,
                     p_17,
                     p_35,
                     p_1357,
                     p_list,             // for the "total"
     };
-}
+
+    HistogramTable();
+    void dump_table();
+    int make_classification(calctype do_what, data_str *ev, int num,
+                            int event, int split, char *sty, double rst);
+
+    int		nsngle,nsplus,npvert,npleft,nprght,npplus,
+		nelnsq,nother,ntotal,noobnd,nbevth;
+    int		ev_min, xav, yav;
+    short	min_adu, max_adu;
+    short	min_2ct, max_2ct;
+    short	xn, xx, yn, yx;
+private:
+    struct look_up {
+        int *type;
+        const int *extr;
+        int *hist;
+    } table[NMAP];
+
+    int histo[8][MAXADU];
+};
 
 /*
  *  For diagnostic purposes, dump the grade table in CLASSIFY format.
  */
-static void
-dump_table()
+void
+HistogramTable::dump_table()
 {
 	register int		i, j;
 
@@ -74,8 +81,7 @@ dump_table()
  *  and which extra pixels should be included in the summed pha,
  *  which only occurs for the L, Q and Other grades.
  */
-static void
-prep_hist()
+HistogramTable::HistogramTable()
 {
     static
     const int extra[][4] = {  {4,4,4,4},
@@ -87,9 +93,6 @@ prep_hist()
                                     0x0a,0x12,0x48,0x50,
                                     0x1a,0x4a,0x58,0x52,
                                     0x5a };
-    static
-    int		histo[8][MAXADU];
-
     const unsigned char sngle[] = { 0x00 };					/* 0 */
     const unsigned char splus[] = { 0x01,0x04,0x20,0x80,0x05,0x21,0x81,		/* 1 */
 				    0x24,0x84,0xa0,0x25,0x85,0xa4,0xa1,0xa5 };
@@ -113,221 +116,231 @@ prep_hist()
 #if 0							  // not actually needed as an array
     const unsigned char other[NMAP] = { all of the rest };			/* 7 */
 #endif
-	/* zero everything in sight */
-	nsngle = nsplus = npvert = npleft = nprght = npplus =
-		 nelnsq = nother = ntotal = noobnd = nbevth = 0;
-	bzero((char *)histo, sizeof(histo));
 
-	/* load the sngle events into table GRADE 0 */
-	for (int i = 0; i < sizeof(sngle); i++) {
-		look_up *t = table + sngle[i];
-		t->type = &nsngle;
-		t->hist = histo[0];
-		t->extr = extra[0];	
-	}
+    /* initialize everything in sight */
+    nsngle = nsplus = npvert = npleft = nprght = npplus =
+        nelnsq = nother = ntotal = noobnd = nbevth = 0;
 
-	/* load the splus events into table GRADE 1 */
-	for (int i = 0; i < sizeof(splus); i++) {
-		look_up *t = table + splus[i];
-		t->type = &nsplus;
-		t->hist = histo[1];
-		t->extr = extra[0];	
-	}
+    ev_min = MAXADU; xav = 0; yav = 0;
+    min_adu = MAXADU; max_adu = 0;
+    min_2ct = MAXADU; max_2ct = 0;
+    xn = yn = std::numeric_limits<int>::max();
+    xx = yx = 0;
+    
+    bzero((char *)histo, sizeof(histo));
 
-	/* load the pvert events into table GRADE 2 */
-	for (int i = 0; i < sizeof(pvert); i++) {
-		look_up *t = table + pvert[i];
-		t->type = &npvert;
-		t->hist = histo[2];
-		t->extr = extra[0];	
-	}
+    /* load the sngle events into table GRADE 0 */
+    for (int i = 0; i < sizeof(sngle); i++) {
+        look_up *t = table + sngle[i];
+        t->type = &nsngle;
+        t->hist = histo[0];
+        t->extr = extra[0];	
+    }
 
-	/* load the pleft events into table GRADE 3 */
-	for (int i = 0; i < sizeof(pleft); i++) {
-		look_up *t = table + pleft[i];
-		t->type = &npleft;
-		t->hist = histo[3];
-		t->extr = extra[0];	
-	}
+    /* load the splus events into table GRADE 1 */
+    for (int i = 0; i < sizeof(splus); i++) {
+        look_up *t = table + splus[i];
+        t->type = &nsplus;
+        t->hist = histo[1];
+        t->extr = extra[0];	
+    }
 
-	/* load the prght events into table GRADE 4 */
-	for (int i = 0; i < sizeof(prght); i++) {
-		look_up *t = table + prght[i];
-		t->type = &nprght;
-		t->hist = histo[4];
-		t->extr = extra[0];	
-	}
+    /* load the pvert events into table GRADE 2 */
+    for (int i = 0; i < sizeof(pvert); i++) {
+        look_up *t = table + pvert[i];
+        t->type = &npvert;
+        t->hist = histo[2];
+        t->extr = extra[0];	
+    }
 
-	/* load the pplus events into table GRADE 5 */
-	for (int i = 0; i < sizeof(pplus); i++) {
-		look_up *t = table + pplus[i];
-		t->type = &npplus;
-		t->hist = histo[5];
-		t->extr = extra[0];	
-	}
+    /* load the pleft events into table GRADE 3 */
+    for (int i = 0; i < sizeof(pleft); i++) {
+        look_up *t = table + pleft[i];
+        t->type = &npleft;
+        t->hist = histo[3];
+        t->extr = extra[0];	
+    }
 
-	/* load the elnsq events into table GRADE 6 */
-	for (int i = 0; i < sizeof(elnsq); i++) {
-		look_up *t = table + elnsq[i];
-		t->type = &nelnsq;
-		t->hist = histo[6];
-		t->extr = extra[0];	
-		for (int b = 0x5a & elnsq[i], j = 0; j < sizeof(emask); j++)
-			if (b == emask[j]) {
-				t->extr = extra[j];
-				break;
-			}
-	}
+    /* load the prght events into table GRADE 4 */
+    for (int i = 0; i < sizeof(prght); i++) {
+        look_up *t = table + prght[i];
+        t->type = &nprght;
+        t->hist = histo[4];
+        t->extr = extra[0];	
+    }
 
-	/* load the other events into table GRADE 7 */
-	for (int i = 0; i < NMAP; i++) {
-		look_up *t = table + i;
-		if (t->type) continue;		/* already loaded */
-		t->type = &nother;
-		t->hist = histo[7];
-		t->extr = extra[0];	
-		/*
-		 *  In this version, included corners are
-		 *  ignored in all of the grade 7 events.
-		 *
-		for (b = 0x5a & (unsigned char)i, j = 0;
-			j < sizeof(emask); j++)
-			if (b == emask[j]) {
-				t->extr = extra[j];
-				break;
-			}
-		*/
-	}
+    /* load the pplus events into table GRADE 5 */
+    for (int i = 0; i < sizeof(pplus); i++) {
+        look_up *t = table + pplus[i];
+        t->type = &npplus;
+        t->hist = histo[5];
+        t->extr = extra[0];	
+    }
+
+    /* load the elnsq events into table GRADE 6 */
+    for (int i = 0; i < sizeof(elnsq); i++) {
+        look_up *t = table + elnsq[i];
+        t->type = &nelnsq;
+        t->hist = histo[6];
+        t->extr = extra[0];	
+        for (int b = (0x5a & elnsq[i]), j = 0; j < sizeof(emask); j++)
+            if (b == emask[j]) {
+                t->extr = extra[j];
+                break;
+            }
+    }
+
+    /* load the other events into table GRADE 7 */
+    for (int i = 0; i < NMAP; i++) {
+        look_up *t = table + i;
+        if (t->type) continue;		/* already loaded */
+        t->type = &nother;
+        t->hist = histo[7];
+        t->extr = extra[0];	
+        /*
+         *  In this version, included corners are
+         *  ignored in all of the grade 7 events.
+         *
+         for (b = 0x5a & (unsigned char)i, j = 0;
+         j < sizeof(emask); j++)
+         if (b == emask[j]) {
+         t->extr = extra[j];
+         break;
+         }
+        */
+    }
 }
 
 /*
  *  Accumulate the num events in the tables
  */
-static void
-make_classification(calctype do_what,
-                    int event,
-                    int split,
-                    int num,
-                    data_str *ev,
-                    double rst,
-                    char *sty
-        )
+int
+HistogramTable::make_classification(
+        calctype do_what,
+        data_str *ev,
+        int num,
+        int event,
+        int split,
+        char *sty,
+        double rst
+                                   )
 {
-  // in this routine we write out the x,y,grade,ph for each event.
-	register unsigned char	map;
-	register int		j;
-	short			phj, sum, phe[9], hsum;
+    // in this routine we write out the x,y,grade,ph for each event.
+    register unsigned char	map;
+    register int		j;
+    short			phj, sum, phe[9], hsum;
 
-	for ( ; num--; ev++) {
-		/*
-		 *  Get some gross event parameters
-		 */
-		if (ev->data[4] < ev_min) ev_min = ev->data[4];
-		if (ev->data[4] < event) { nbevth++; continue; }
-		/*
-		 *  Insert the reset clock correction
-		 */
-		switch (*sty) {
-			case '6':
-				ev->data[7] -= ev->data[6]*rst;
-				ev->data[4] -= ev->data[3]*rst;
-				ev->data[1] -= ev->data[0]*rst;
-			case '3':
-				ev->data[8] -= ev->data[7]*rst;
-				ev->data[2] -= ev->data[1]*rst;
-			case '1':
-				ev->data[5] -= ev->data[4]*rst;
-			default:	break;		/* no correction */
-		}
-		/*
-		 *  Characterize event & accumulate most of pha
-		 */
-		const int p4 = ev->data[4];
-		int p9 = 0;
-		for (j = 0, map = 0, sum = 0; j < 9; j++) {
-			phe[j] = phj = ev->data[j];
+    for ( ; num--; ev++) {
+        /*
+         *  Get some gross event parameters
+         */
+        if (ev->data[4] < ev_min) ev_min = ev->data[4];
+        if (ev->data[4] < event) { nbevth++; continue; }
+        /*
+         *  Insert the reset clock correction
+         */
+        switch (*sty) {
+          case '6':
+            ev->data[7] -= ev->data[6]*rst;
+            ev->data[4] -= ev->data[3]*rst;
+            ev->data[1] -= ev->data[0]*rst;
+          case '3':
+            ev->data[8] -= ev->data[7]*rst;
+            ev->data[2] -= ev->data[1]*rst;
+          case '1':
+            ev->data[5] -= ev->data[4]*rst;
+          default:	break;		/* no correction */
+        }
+        /*
+         *  Characterize event & accumulate most of pha
+         */
+        const int p4 = ev->data[4];
+        int p9 = 0;
+        for (j = 0, map = 0, sum = 0; j < 9; j++) {
+            phe[j] = phj = ev->data[j];
 
-			switch (do_what) {
-                          case p_9:
-                            p9 += phj;
-                            break;
-                          case p_1357:
-                            if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9 += phj;
-                            break;
-                          case p_17:
-                            if ((j-1)*(j-7)*(j-4)==0) p9 += phj;
-                            break;
-                          case p_35:
-                            if ((j-3)*(j-5)*(j-4)==0) p9 += phj;
-                            break;
-                          case p_list:
-                            break;
-                        }
+            switch (do_what) {
+              case p_9:
+                p9 += phj;
+                break;
+              case p_1357:
+                if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9 += phj;
+                break;
+              case p_17:
+                if ((j-1)*(j-7)*(j-4)==0) p9 += phj;
+                break;
+              case p_35:
+                if ((j-3)*(j-5)*(j-4)==0) p9 += phj;
+                break;
+              case p_list:
+                break;
+            }
 
-                        if (phj < split && j != 4) {
-                          phe[j] = 0;
-                          continue;
-                        }
-			switch (j) {
-				case 0: map |= 0x01;           ; break;
-				case 1: map |= 0x02; sum += phj; break;
-				case 2: map |= 0x04;           ; break;
-				case 3: map |= 0x08; sum += phj; break;
-				case 4: 	     sum += phj; break;
-				case 5: map |= 0x10; sum += phj; break;
-				case 6: map |= 0x20;           ; break;
-				case 7: map |= 0x40; sum += phj; break;
-				case 8: map |= 0x80;           ; break;
-			}
-		}
-		/*
-		 *  Finish pha with extra pixels of L, Q, and O events
-		 */
-                look_up *const ent = &table[map];
-		const int *xtr = ent->extr;
-		for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
-		/*
-		 *  Accumulate statistics and various bounds
-		 */
-		if (sum >= MAXADU) { noobnd++;  continue; }
-		if (sum > max_adu) max_adu = sum;
-		if (sum < min_adu) min_adu = sum;
-		if (ev->x < xn) xn = ev->x;
-		if (ev->x > xx) xx = ev->x;
-		if (ev->y < yn) yn = ev->y;
-		if (ev->y > yx) yx = ev->y;
-		xav += ev->x;
-		yav += ev->y;
-		ntotal += 1;
-		*ent->type += 1;
-		hsum = ent->hist[sum] += 1;
-		if (hsum > 2) {
-			if (sum > max_2ct) max_2ct = sum;
-			if (sum < min_2ct) min_2ct = sum;
-		}
-		{
-		  int grd;
-		  if (ent->type == &nsngle) { grd=0; } 
-		  else { if (ent->type == &nsplus) { grd=1; }
-		    else { if (ent->type == &npvert) {	grd=2; }
-		      else { if (ent->type == &npleft) { grd=3; }
+            if (phj < split && j != 4) {
+                phe[j] = 0;
+                continue;
+            }
+            switch (j) {
+              case 0: map |= 0x01;           ; break;
+              case 1: map |= 0x02; sum += phj; break;
+              case 2: map |= 0x04;           ; break;
+              case 3: map |= 0x08; sum += phj; break;
+              case 4: 	     sum += phj; break;
+              case 5: map |= 0x10; sum += phj; break;
+              case 6: map |= 0x20;           ; break;
+              case 7: map |= 0x40; sum += phj; break;
+              case 8: map |= 0x80;           ; break;
+            }
+        }
+        /*
+         *  Finish pha with extra pixels of L, Q, and O events
+         */
+        look_up *const ent = &table[map];
+        const int *xtr = ent->extr;
+        for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+        /*
+         *  Accumulate statistics and various bounds
+         */
+        if (sum >= MAXADU) { noobnd++;  continue; }
+        if (sum > max_adu) max_adu = sum;
+        if (sum < min_adu) min_adu = sum;
+        if (ev->x < xn) xn = ev->x;
+        if (ev->x > xx) xx = ev->x;
+        if (ev->y < yn) yn = ev->y;
+        if (ev->y > yx) yx = ev->y;
+        xav += ev->x;
+        yav += ev->y;
+        ntotal += 1;
+        *ent->type += 1;
+        hsum = ent->hist[sum] += 1;
+        if (hsum > 2) {
+            if (sum > max_2ct) max_2ct = sum;
+            if (sum < min_2ct) min_2ct = sum;
+        }
+        {
+            int grd;
+            if (ent->type == &nsngle) { grd=0; } 
+            else { if (ent->type == &nsplus) { grd=1; }
+                else { if (ent->type == &npvert) {	grd=2; }
+                    else { if (ent->type == &npleft) { grd=3; }
 			else { if (ent->type == &nprght) { grd=4; } 
-			  else { if (ent->type == &npplus) { grd=5; } 
-			    else { if (ent->type == &nelnsq) { grd=6; } 
-			      else { if (ent->type == &nother) { grd=7; }
-				else { grd=-1; } } } } } } } }
-		  if (do_what == p_list) {
-		    fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
-		    {
-		      for (int i=0;i<9;i++) 
+                            else { if (ent->type == &npplus) { grd=5; } 
+                                else { if (ent->type == &nelnsq) { grd=6; } 
+                                    else { if (ent->type == &nother) { grd=7; }
+                                        else { grd=-1; } } } } } } } }
+            if (do_what == p_list) {
+                fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
+                {
+                    for (int i=0;i<9;i++) 
 			fprintf(stdout," %f",ev->data[i]);
-		      fprintf(stdout,"\n");
-		    }
-		  } else {
-		    fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
-		  }
-		}
-	}
+                    fprintf(stdout,"\n");
+                }
+            } else {
+                fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
+            }
+        }
+    }
+    return 1;
 }
 
 #if defined(MAIN)
@@ -374,13 +387,13 @@ main(int argc, char **argv)
 	char    *calc;
 
 	if (argc == 1) {	/* for diagnostic purposes */
-		prep_hist();
-		dump_table();
-		return(0);
+            HistogramTable table;
+            table.dump_table();
+            return(0);
 	}
 	if (argc < 3 || argc > 6) { usage(); return(1); }
 
-        calctype do_what=p_9;
+        HistogramTable::calctype do_what = HistogramTable::p_9;
 	if (--argc) {
 	  event = atoi(*++argv);
 	  if (--argc) {
@@ -388,15 +401,15 @@ main(int argc, char **argv)
 	    if (--argc) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-                  do_what=p_9;
+                  do_what=HistogramTable::p_9;
 	      } else if (strcmp(calc,"p17")==0) {
-		  do_what=p_17;
+		  do_what=HistogramTable::p_17;
               } else if (strcmp(calc,"p35")==0) {
-                  do_what=p_35;
+                  do_what=HistogramTable::p_35;
               } else if (strcmp(calc,"p1357")==0) {
-                  do_what=p_1357;
+                  do_what=HistogramTable::p_1357;
               } else if (strcmp(calc,"plist")==0) {
-                  do_what=p_list;
+                  do_what=HistogramTable::p_list;
               } else {
                   fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
                   exit(1);
@@ -414,14 +427,13 @@ main(int argc, char **argv)
 	  }
 	}
 
-	prep_hist();
-
+        HistogramTable table;
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
 		tot += num;
-		make_classification(do_what, event, split, num, eventdata, reset, style);
+		table.make_classification(do_what, eventdata, num, event, split, style, reset);
 	}
 	return(0);
 }
