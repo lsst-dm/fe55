@@ -32,5 +32,5 @@ else
 fi
 }
 
-#myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
+myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
 myTest $RASMUSSEN_DIR/src/rv_ev2xygpx --ev2pcf 30 10
