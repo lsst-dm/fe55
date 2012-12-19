@@ -116,33 +116,8 @@ HistogramTable::process_event(
     if (!accept) {
         return 0;
     }
-    /*
-     *  Finish pha with extra pixels of L, Q, and O events
-     */
-    look_up *ent = &table[map];
-    const int *xtr = ent->extr;
-    for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
-    /*
-     *  Accumulate statistics and various bounds
-     */
-    if (sum >= MAXADU) { noobnd++;  return 0; }
-    if (sum > max_adu) max_adu = sum;
-    if (sum < min_adu) min_adu = sum;
-    if (ev->x < xn) xn = ev->x;
-    if (ev->x > xx) xx = ev->x;
-    if (ev->y < yn) yn = ev->y;
-    if (ev->y > yx) yx = ev->y;
-    xav += ev->x;
-    yav += ev->y;
-    ntotal += 1;
-    *ent->type += 1;
-    const int hsum = ent->hist[sum] += 1;
-    if (hsum > 2) {
-        if (sum > max_2ct) max_2ct = sum;
-        if (sum < min_2ct) min_2ct = sum;
-    }
 
-    return (sum >= phlo && sum < phhi) ? 1 : 0;
+    return finishEventProcessing(ev, phe, map);
 }
 
 #if defined(MAIN)

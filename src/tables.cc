@@ -203,6 +203,61 @@ HistogramTableBase::HistogramTableBase(const int filter) : _filter(filter)
     nnoto+=sizeof(elnsq);
 }
 
+int
+HistogramTableBase::finishEventProcessing(const data_str *ev,
+                                          const short phe[9],
+                                          const int map)
+{
+    /*
+     *  Finish pha with extra pixels of L, Q, and O events
+     */
+    look_up *const ent = &table[map];
+    const int *xtr = ent->extr;
+    for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+    /*
+     *  Accumulate statistics and various bounds
+     */
+    if (sum >= MAXADU) { noobnd++;  return 0; }
+    if (sum > max_adu) max_adu = sum;
+    if (sum < min_adu) min_adu = sum;
+    if (ev->x < xn) xn = ev->x;
+    if (ev->x > xx) xx = ev->x;
+    if (ev->y < yn) yn = ev->y;
+    if (ev->y > yx) yx = ev->y;
+    xav += ev->x;
+    yav += ev->y;
+    ntotal += 1;
+    *ent->type += 1;
+    const int hsum = ent->hist[sum] += 1;
+    if (hsum > 2) {
+        if (sum > max_2ct) max_2ct = sum;
+        if (sum < min_2ct) min_2ct = sum;
+    }
+
+    // n.b. grd is in HistogramTableBase
+    if (ent->type == &nsngle) {
+        grd=0;
+    } else if (ent->type == &nsplus) {
+        grd=1;
+    } else if (ent->type == &npvert) {
+        grd=2;
+    } else if (ent->type == &npleft) {
+        grd=3;
+    } else if (ent->type == &nprght) {
+        grd=4;
+    } else if (ent->type == &npplus) {
+        grd=5;
+    } else if (ent->type == &nelnsq) {
+        grd=6;
+    } else if (ent->type == &nother) {
+        grd=7;
+    } else {
+        grd=-1;
+    }
+
+    return 1;
+}
+
 /*
  *  For diagnostic purposes, dump the grade table in CLASSIFY format.
  */

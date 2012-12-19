@@ -30,6 +30,8 @@ protected:
         int *hist;
     } table[NMAP];
 
+    int finishEventProcessing(const data_str *ev, const short phe[9], const int map);
+
     int histo[8][MAXADU];
     int nacc, nnoto;
     unsigned char accmap[NMAP], notomap[NMAP];
