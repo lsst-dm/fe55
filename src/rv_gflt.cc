@@ -27,18 +27,12 @@ class HistogramTable {
     enum { NMAP = 256 };
 public:
     enum {MAXADU = 4096};
-    enum RESET_STYLES { TNONE, T6, T3, T1 };
+    enum RESET_STYLES { TNONE, T1, T3, T6, };
 
     HistogramTable(const int filter);
 
     int make_hist(data_str *ev,
-                  int event,
-                  int split,
-                  int phlo=0,
-                  int phhi=0,
-                  RESET_STYLES sty=TNONE,
-                  double rst=0.0
-                 );
+                  int event, int split, int phlo=0, int phhi=0, RESET_STYLES sty=TNONE, double rst=0.0);
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
