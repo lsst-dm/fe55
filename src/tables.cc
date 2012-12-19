@@ -279,4 +279,52 @@ HistogramTableBase::dump_table() const
 		(void)fprintf(stderr, "%d,", j);
 		if (i%16 == 15) (void)fprintf(stderr, "\n");
 	}
+
+/*
+ *  Dump the QDP header histogram table
+ */
+void
+HistogramTableBase::dump_hist(int event, int split, const char *sfile, const char *efile) const
+{
+    (void)printf("!\n");
+    (void)printf("!  QDP Header follows\n");
+    (void)printf("!\n");
+    (void)printf("lab top Event = %d Split = %d Source = %s\n",
+                  event, split, sfile);
+    if (efile[0]) (void)printf("lab file %s", efile);
+    (void)printf("lab g1 Pulse Height (ADU)\n");
+    (void)printf("lab rot\n");
+    (void)printf("lab g2 N(S)\nlab g3 N(S+)\n");
+    (void)printf("lab g4 N(Pv)\nlab g5 N(Pl)\n");
+    (void)printf("lab g6 N(Pr)\nlab g7 N(P+)\n");
+    (void)printf("lab g8 N(L+Q)\nlab g9 N(O)\n");
+    (void)printf("csize 0.75\n");
+
+    const int EXTADU = 8;
+    const int tmp_min_2ct = (min_2ct <        EXTADU) ?      0 : min_2ct - EXTADU;
+    const int tmp_max_2ct = (max_2ct >= MAXADU - EXTADU) ? MAXADU : max_2ct + 1 + EXTADU;
+    (void)printf("res x %d %d\n", tmp_min_2ct, tmp_max_2ct);
+    (void)printf("res y2 1\nres y3 1\n");
+    (void)printf("res y4 1\nres y5 1\n");
+    (void)printf("res y6 1\nres y7 1\n");
+    (void)printf("res y8 1\nres y9 1\n");
+
+    (void)printf("error y sq 2 3 4 5 6 7 8 9\n");
+    (void)printf("log y on\n");
+    (void)printf("plot vert\n");
+    (void)printf("!\n");
+    (void)printf("!  Histogram data follows\n");
+    (void)printf("!\n");
+    (void)printf("!  PHA\tS\tS+\tPv\tPl\tPr\tP+\tL+Q\tO\n");
+    (void)printf("!  TOT\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                  nsngle,nsplus,npvert,npleft,nprght,npplus,nelnsq,nother);
+    (void)printf("!\n");
+
+    int tmp_min_adu = (min_adu <         EXTADU) ?      0 : min_adu - EXTADU;
+    int tmp_max_adu = (max_adu >= MAXADU-EXTADU) ? MAXADU : max_adu + 1 + EXTADU;
+    for (int i = tmp_min_adu; i < tmp_max_adu; i++) {
+        (void)printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i,
+                     histo[0][i], histo[1][i], histo[2][i], histo[3][i],
+                     histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
+    }
 }
