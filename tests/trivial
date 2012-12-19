@@ -7,8 +7,12 @@ trap "rm -f $tmpfile" 0
 
 function myTest()
 {
-   testName=$(basename $1); shift
-   testBasename=$(basename $testName)
+   testName=$1; shift
+   if [ X$1 = X"--ev2pcf" ]; then
+       testBasename="rv_ev2pcf"
+   else
+       testBasename=$(basename $testName)
+   fi
    truth=$RASMUSSEN_DIR/tests/$testBasename.out
 
    medpict_lsst -b -f e -c -e \
@@ -20,9 +24,13 @@ if cmp $tmpfile $truth > /dev/null 2>&1; then
    echo Pass $testBasename >&2
 else
    echo Fail $testBasename >&2
-   diff $tmpfile $truth | head -10 >&2
+   if True; then
+       diff $tmpfile $truth | head -10 >&2
+   else
+       diff $tmpfile $truth >&2
+   fi
 fi
 }
 
-myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
-myTest $RASMUSSEN_DIR/src/rv_ev2pcf 30 10
+#myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
+myTest $RASMUSSEN_DIR/src/rv_ev2xygpx --ev2pcf 30 10
