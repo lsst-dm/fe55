@@ -2,17 +2,27 @@
 #
 # See if we still get the same results as the old C code used to
 #
-truth=$RASMUSSEN_DIR/tests/rv_ev2xygpx.out
 tmpfile="${TEMPDIR:-/tmp}/$(whoami)-$$"
 trap "rm -f $tmpfile" 0
-medpict_lsst -b -f e -c -e \
+
+function myTest()
+{
+   testName=$(basename $1); shift
+   testBasename=$(basename $testName)
+   truth=$RASMUSSEN_DIR/tests/$testBasename.out
+
+   medpict_lsst -b -f e -c -e \
 	     ~/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz 2> /dev/null |
-$RASMUSSEN_DIR/src/rv_gflt 30 10 -g 0 2 3 4 6 |
-$RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 > $tmpfile
+   $RASMUSSEN_DIR/src/rv_gflt 30 10 -g 0 2 3 4 6 |
+   $testName $@ > $tmpfile
 
 if cmp $tmpfile $truth > /dev/null 2>&1; then
-   echo Pass >&2
+   echo Pass $testBasename >&2
 else
-   echo Fail >&2
+   echo Fail $testBasename >&2
    diff $tmpfile $truth | head -10 >&2
 fi
+}
+
+myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
+myTest $RASMUSSEN_DIR/src/rv_ev2pcf 30 10
