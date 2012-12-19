@@ -123,6 +123,68 @@ HistogramTable::process_event(
 }
 }
 
+
+/*
+ *  Dump the basic calibration file header
+ */
+const int NAMLEN = 512;
+
+static void
+dump_head(const HistogramTable &table,
+          const char *sfile, char *efile,
+          int event, int split, int total)          
+{
+	FILE	*fp;
+	char	line[NAMLEN], *c;
+
+	(void)fprintf(stdout, "!\n");
+	(void)fprintf(stdout, "!  QDP Basic Calibration File\n");
+	(void)fprintf(stdout, "!\n");
+	(void)fprintf(stdout, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
+	(void)fprintf(stdout, "!  Source_file  = %s\n", sfile);
+	(void)fprintf(stdout, "!  Event_thresh = %d\n", event);
+	(void)fprintf(stdout, "!  Split_thresh = %d\n", split);
+	//(void)fprintf(stdout, "!  Total_frames = %d\n", table.cnt);
+	(void)fprintf(stdout, "!  Total_events = %d\n", table.ntotal);
+	(void)fprintf(stdout, "!  Total_pixels = %d\n", (table.xx - table.xn)*(table.yx - table.yn));
+	(void)fprintf(stdout, "!\n");
+	(void)fprintf(stdout, "!  Events_below = %d\n", table.nbevth);
+	(void)fprintf(stdout, "!  Events_above = %d\n", table.noobnd);
+	(void)fprintf(stdout, "!  Events_input = %d\n", total);
+	(void)fprintf(stdout, "!  PH4_minimum  = %d\n", table.ev_min);
+	(void)fprintf(stdout, "!  PHS_minimum  = %d\n", table.min_adu);
+	(void)fprintf(stdout, "!  PHS_Maximum  = %d\n", table.max_adu);
+	(void)fprintf(stdout, "!  X_Minimum    = %d\n", table.xn);
+	(void)fprintf(stdout, "!  X_Average    = %d\n", table.xav/table.ntotal);
+	(void)fprintf(stdout, "!  X_Maximum    = %d\n", table.xx);
+	(void)fprintf(stdout, "!  Y_Minimum    = %d\n", table.yn);
+	(void)fprintf(stdout, "!  Y_Average    = %d\n", table.yav/table.ntotal);
+	(void)fprintf(stdout, "!  Y_Maximum    = %d\n", table.yx);
+
+	(void)fprintf(stdout, "!\n");
+	(void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
+	(void)fprintf(stdout, "!\n");
+
+        if (strcmp(sfile, "unknown") == 0) {
+            return;
+        }
+        
+	if ((fp = fopen(sfile, "r")) == NULL) return;
+	(void)fprintf(stdout, "!\n");
+	(void)fprintf(stdout, "!  Experimental parameters\n");
+	(void)fprintf(stdout, "!\n");
+	while (fgets(line, NAMLEN-1, fp)) {
+		if (line[0] == '#') continue;
+		(void)fprintf(stdout, "!  %s", line);
+		if (!strncmp(line, "evlist  = ", 10)) {
+			(void)strcpy(efile, &line[10]);
+			for (c = efile; *c; c++)
+				if (*c == '\t') *c = ' '; 
+		}
+	}
+	(void)fclose(fp);
+}
+
 #if defined(MAIN)
 /*
  *  Usage complaint message
@@ -158,33 +220,37 @@ usage()
 	(void)fprintf(stderr, "lookup grade table is dumped to stderr.\n");
 }
 
-
 /*
  * Write out the x,y,grade,ph for each acceptable event.
  */
 int
 main(int argc, char **argv)
 {
+    const bool ev2pcf = (argc > 1 && strcmp(argv[1], "--ev2pcf") == 0); // run the ev2pcf code
+    if (ev2pcf) {
+        --argc; ++argv;
+    }
+
 	int	event, split, num, tot = 0;
         HistogramTable::RESET_STYLES style = HistogramTable::T1;
 
-	char	*sfile;
+	const char *sfile = "unknown";
 	double	reset = 0;
 	char    *calc;
 
 	if (argc == 1) {	/* for diagnostic purposes */
             HistogramTable table;
             table.dump_table();
-            return(0);
+            return 0;
 	}
-	if (argc < 3 || argc > 6) { usage(); return(1); }
+	if (argc < 3 || argc > 6) { usage(); return 1; }
 
-        HistogramTable::calctype do_what = HistogramTable::p_9;
-	if (--argc) {
+        HistogramTable::calctype do_what = ev2pcf ? HistogramTable::p_list : HistogramTable::p_9;
+	if (--argc > 0) {
 	  event = atoi(*++argv);
-	  if (--argc) {
+	  if (--argc > 0) {
 	    split = atoi(*++argv);
-	    if (--argc) {
+	    if (--argc > 0) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
                   do_what=HistogramTable::p_9;
@@ -230,6 +296,9 @@ main(int argc, char **argv)
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
                 if (table.process_event(ev, event, split, style, reset)) {
+                    if (ev2pcf) {
+                        continue;
+                    }
                     if (do_what == HistogramTable::p_list) {
                         fprintf(stdout,"%d %d %d %d p:", ev->x, ev->y, table.grd, table.sum);
                         for (int i=0;i<9;i++) {
@@ -244,6 +313,13 @@ main(int argc, char **argv)
                 }
             }
 	}
-	return(0);
+
+        if (ev2pcf) {
+            char efile[NAMLEN];
+            dump_head(table, sfile, efile, event, split, tot);
+            table.dump_hist(event, split, sfile, "");
+        }
+
+	return 0;
 }
 #endif
