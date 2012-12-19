@@ -27,16 +27,17 @@ class HistogramTable {
     enum { NMAP = 256 };
 public:
     enum {MAXADU = 4096};
+    enum RESET_STYLES { TNONE, T6, T3, T1 };
 
     HistogramTable(const int filter);
 
-    int make_hist(int event,
+    int make_hist(data_str *ev,
+                  int event,
                   int split,
-                  data_str *ev,
-                  double rst,
-                  char *sty,
-                  int phlo,
-                  int phhi
+                  int phlo=0,
+                  int phhi=0,
+                  RESET_STYLES sty=TNONE,
+                  double rst=0.0
                  );
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
@@ -255,15 +256,20 @@ HistogramTable::HistogramTable(const int filter // bitmask for which grades to a
  *  Accumulate the num events in the tables
  */
 int
-HistogramTable::make_hist(int event,
-          int split,
+HistogramTable::make_hist(
 	  data_str *ev,
-          double rst,
-          char *sty,
+	  int event,
+          int split,
           int phlo,
-          int phhi          
+	  int phhi,
+          RESET_STYLES sty,
+          double rst
          )
 {
+    if (phhi < 0) {
+        phhi = MAXADU;
+    }
+
     /*
      *  Get some gross event parameters
      */
@@ -272,16 +278,19 @@ HistogramTable::make_hist(int event,
     /*
      *  Insert the reset clock correction
      */
-    switch (*sty) {
-      case '6':
+    switch (sty) {
+      case T6:
         ev->data[7] -= ev->data[6]*rst;
         ev->data[4] -= ev->data[3]*rst;
-        ev->data[1] -= ev->data[0]*rst;
-      case '3':
+        ev->data[1] -= ev->data[0]*rst; // fall through
+      case T3:
         ev->data[8] -= ev->data[7]*rst;
-        ev->data[2] -= ev->data[1]*rst;
-      case '1':
+        ev->data[2] -= ev->data[1]*rst; // fall through
+      case T1:
         ev->data[5] -= ev->data[4]*rst;
+        break;
+      case TNONE:
+        break;
     }
     /*
      *  Characterize event & accumulate most of pha
@@ -400,7 +409,7 @@ main(int argc, char **argv)
 {
 	int	event, split, num, gr, tot = 0;
         int     phlo=0, phhi=-1;
-	char	style[256];
+        HistogramTable::RESET_STYLES style = HistogramTable::TNONE;
 	double	reset=0;
 
 	if (argc<2) {
@@ -454,16 +463,12 @@ main(int argc, char **argv)
         /* ready for the data now. */
 
         HistogramTable table(filter);
-        if (phhi < 0) {
-            phhi = table.MAXADU;
-        }
-
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.make_hist(event, split, ev, reset, style, phlo, phhi)) {
+                if (table.make_hist(ev, event, split, phlo, phhi, style, reset)) {
                     fwrite(ev, sizeof(data_str), 1, stdout);
                 }
             }
