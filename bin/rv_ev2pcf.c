@@ -74,7 +74,7 @@ char		efile[NAMLEN];
 static void
 usage()
 {
-	(void)fprintf(stderr, "Usage:  rv_ev2pcf event split sfile ");
+	(void)fprintf(stderr, "Usage:  rv_ev2pcf event split [sfile] ");
 	(void)fprintf(stderr, "[reset [style]] < evlist > pcfile\n\n");
 	(void)fprintf(stderr, "\tevent  == event threshold\n");
 	(void)fprintf(stderr, "\tsplit  == split threshold\n");
@@ -324,7 +324,7 @@ make_hist(int event,
  *  Dump the basic calibration file header
  */
 static void
-dump_head(char	*sfile,
+dump_head(const char	*sfile,
           int event, int split, int total)          
 {
 	FILE	*fp;
@@ -358,6 +358,10 @@ dump_head(char	*sfile,
 	(void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
 	(void)fprintf(stdout, "!\n");
 
+        if (strcmp(sfile, "unknown") == 0) {
+            return;
+        }
+        
 	if ((fp = fopen(sfile, "r")) == NULL) return;
 	(void)fprintf(stdout, "!\n");
 	(void)fprintf(stdout, "!  Experimental parameters\n");
@@ -378,7 +382,7 @@ dump_head(char	*sfile,
  *  Dump the QDP header histogram table
  */
 static void
-dump_hist(int event, int split, char *sfile)
+dump_hist(int event, int split, const char *sfile)
 {
 	register int	i;
 
@@ -431,7 +435,8 @@ main(int argc,
     )
 {
 	int	event, split, num, tot = 0;
-	char	*sfile, def_style = '1', *style = &def_style;
+	const char *sfile = "unknown";
+        char    def_style = '1', *style = &def_style;
 	double	reset = 0;
 
 	if (argc == 1) {	/* for diagnostic purposes */
@@ -439,10 +444,13 @@ main(int argc,
 		dump_table();
 		return(0);
 	}
-	if (argc < 4 || argc > 6) { usage(); return(1); }
+	if (argc < 3 || argc > 6) { usage(); return(1); }
 	if (--argc) event = atoi(*++argv);
 	if (--argc) split = atoi(*++argv);
-	if (--argc) sfile = *++argv;
+        if (argc > 1) {
+            --argc;
+            sfile = *++argv;
+        }
 	if (--argc) {
 		reset = atof(*++argv);
 		if (--argc) style = *++argv;
