@@ -22,6 +22,7 @@ class HistogramTable {
     enum { NMAP = 256 };
 public:
     enum {MAXADU = 4096};
+    enum RESET_STYLES { TNONE, T1, T3, T6, };
     enum calctype { p_9,
                     p_17,
                     p_35,
@@ -32,7 +33,7 @@ public:
     HistogramTable();
     void dump_table();
     int make_classification(calctype do_what, data_str *ev,
-                            int event, int split, char *sty, double rst);
+                            int event, int split, RESET_STYLES sty, double rst);
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
@@ -220,7 +221,7 @@ HistogramTable::make_classification(
         data_str *ev,
         int event,
         int split,
-        char *sty,
+        RESET_STYLES sty,
         double rst
                                    )
 {
@@ -237,17 +238,19 @@ HistogramTable::make_classification(
     /*
      *  Insert the reset clock correction
      */
-    switch (*sty) {
-      case '6':
+    switch (sty) {
+      case T6:
         ev->data[7] -= ev->data[6]*rst;
         ev->data[4] -= ev->data[3]*rst;
-        ev->data[1] -= ev->data[0]*rst;
-      case '3':
+        ev->data[1] -= ev->data[0]*rst; // fall through
+      case T3:
         ev->data[8] -= ev->data[7]*rst;
-        ev->data[2] -= ev->data[1]*rst;
-      case '1':
+        ev->data[2] -= ev->data[1]*rst; // fall through
+      case T1:
         ev->data[5] -= ev->data[4]*rst;
-      default:	break;		/* no correction */
+        break;
+      case TNONE:
+        break;
     }
     /*
      *  Characterize event & accumulate most of pha
@@ -389,7 +392,9 @@ int
 main(int argc, char **argv)
 {
 	int	event, split, num, tot = 0;
-	char	*sfile, def_style = '1', *style = &def_style;
+        HistogramTable::RESET_STYLES style = HistogramTable::T1;
+
+	char	*sfile;
 	double	reset = 0;
 	char    *calc;
 
@@ -426,7 +431,16 @@ main(int argc, char **argv)
 		if (--argc) {
 		  reset = atof(*++argv);
 		  if (--argc) {
-		    style = *++argv;
+                      const char *styleStr = *++argv;
+                                            
+                      switch (*styleStr) {
+                        case '1': style = HistogramTable::T1; break;
+                        case '3': style = HistogramTable::T3; break;
+                        case '6': style = HistogramTable::T6; break;
+                        default:
+                          fprintf(stderr,"Invalid reset style: %s\n exiting..", styleStr);
+                          return 1;
+                      }
 		  }
 		}
 	      }
