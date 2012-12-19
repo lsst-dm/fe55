@@ -337,7 +337,7 @@ dump_head(const char	*sfile,
 	(void)fprintf(stdout, "!  Source_file  = %s\n", sfile);
 	(void)fprintf(stdout, "!  Event_thresh = %d\n", event);
 	(void)fprintf(stdout, "!  Split_thresh = %d\n", split);
-	(void)fprintf(stdout, "!  Total_frames = %d\n", cnt);
+	//(void)fprintf(stdout, "!  Total_frames = %d\n", cnt);
 	(void)fprintf(stdout, "!  Total_events = %d\n", ntotal);
 	(void)fprintf(stdout, "!  Total_pixels = %d\n", (xx - xn)*(yx - yn));
 	(void)fprintf(stdout, "!\n");
