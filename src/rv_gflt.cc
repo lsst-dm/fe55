@@ -20,27 +20,44 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <limits>
 #include "lsst/rasmussen/rv.h"
 
-namespace {
-    const int MAXADU = 4096;
+class HistogramTable {
+    enum { NMAP = 256 };
+public:
+    enum {MAXADU = 4096};
 
+    HistogramTable(const int filter);
+
+    int make_hist(int event,
+                  int split,
+                  data_str *ev,
+                  double rst,
+                  char *sty,
+                  int phlo,
+                  int phhi
+                 );
+
+    int		nsngle,nsplus,npvert,npleft,nprght,npplus,
+		nelnsq,nother,ntotal,noobnd,nbevth;
+    int		ev_min, xav, yav;
+    short	min_adu, max_adu;
+    short	min_2ct, max_2ct;
+    short	xn, xx, yn, yx;
+
+    int nacc, nnoto;
+    unsigned char accmap[NMAP], notomap[NMAP];
+private:
     struct look_up {
         int *type;
         const int *extr;
         int *hist;
-    } table[256];
+    } table[NMAP];
 
-    int		nsngle,nsplus,npvert,npleft,nprght,npplus,
-		nelnsq,nother,ntotal,noobnd,nbevth;
-    int		ev_min = MAXADU, xav = 0, yav = 0;
-    short	min_adu = MAXADU, max_adu = 0;
-    short	min_2ct = MAXADU, max_2ct = 0;
-    short	xn = 512, xx = 0, yn = 512, yx = 0;
-
-    int nacc, nnoto;
-    unsigned char accmap[256], notomap[256], filter=0xff;
-}
+    int histo[8][MAXADU];
+    const int _filter;
+};
 
 /*
  *  Initialize the histogram tables.  Each entry of the table needs
@@ -48,8 +65,8 @@ namespace {
  *  and which extra pixels should be included in the summed pha,
  *  which only occurs for the L, Q and Other grades.
  */
-static void
-prep_hist()
+HistogramTable::HistogramTable(const int filter // bitmask for which grades to accept
+                              ) : _filter(filter)
 {
     static
     const int extra[][4] = {  {4,4,4,4},
@@ -61,7 +78,6 @@ prep_hist()
 			    0x0a,0x12,0x48,0x50,
 			    0x1a,0x4a,0x58,0x52,
 			    0x5a };
-    int		histo[8][MAXADU];
     const unsigned char	sngle[] = { 0x00 }; 					/* 0 */
     const unsigned char	splus[] = { 0x01,0x04,0x20,0x80,0x05,0x21,0x81,		/* 1 */
                                     0x24,0x84,0xa0,0x25,0x85,0xa4,0xa1,0xa5 };
@@ -88,17 +104,24 @@ prep_hist()
                                     0x16,0xd0,0x68,0x0b,0x36,0xd1,0x6c,0x8b };
 
 #if 0                                                     // not actually needed as an array
-    unsigned char	other[256] = { all of the rest };			/* 7 */
+    unsigned char	other[NMAP] = { all of the rest };			/* 7 */
 #endif
 
-    /* zero everything in sight */
+    /* initialize everything in sight */
     nsngle = nsplus = npvert = npleft = nprght = npplus =
         nelnsq = nother = ntotal = noobnd = nbevth = 0;
+
+    ev_min = MAXADU; xav = 0; yav = 0;
+    min_adu = MAXADU; max_adu = 0;
+    min_2ct = MAXADU; max_2ct = 0;
+    xn = yn = std::numeric_limits<int>::max();
+    xx = yx = 0;
+    
     bzero((char *)histo, sizeof(histo));
 
     /* make up the array of acceptable maps. */
 
-    for (int i = 0; i < 256; i++) accmap[i]=0;
+    for (int i = 0; i < NMAP; i++) accmap[i]=0;
     nacc=0;
 
     if (filter & 0x01) {
@@ -208,7 +231,7 @@ prep_hist()
     }
 
     /* load the other events into table GRADE 7 */
-    for (int i = 0; i < sizeof(table)/sizeof(table[0]); i++) {
+    for (int i = 0; i < NMAP; i++) {
         look_up *t = table + i;
         if (t->type) continue;		/* already loaded */
         t->type = &nother;
@@ -231,10 +254,10 @@ prep_hist()
 /*
  *  Accumulate the num events in the tables
  */
-static int
-make_hist(int event,
+int
+HistogramTable::make_hist(int event,
           int split,
-          struct data_str *ev,
+	  data_str *ev,
           double rst,
           char *sty,
           int phlo,
@@ -292,7 +315,7 @@ make_hist(int event,
     }
 
     /* 
-     *  grade is identified. check with filter to see whether
+     *  grade is identified. check with _filter to see whether
      *  to pass it on or not.
      *
      */
@@ -304,7 +327,7 @@ make_hist(int event,
             break;
         }
     }
-    if (!accept && filter & 0x80) {
+    if (!accept && _filter & 0x80) {
         for (int j = 0; j < nnoto; j++) {
             if (map == notomap[j]) return 0;
         }
@@ -376,7 +399,7 @@ int
 main(int argc, char **argv)
 {
 	int	event, split, num, gr, tot = 0;
-        int     phlo=0, phhi=MAXADU - 1;
+        int     phlo=0, phhi=-1;
 	char	style[256];
 	double	reset=0;
 
@@ -388,6 +411,8 @@ main(int argc, char **argv)
 	--argc;argv++;	event=atoi(*argv);
 	--argc;argv++;	split=atoi(*argv);
 
+        int filter = 0x00;              // mask of grades we care about
+
 	while (--argc>0) {
 	  argv++;
 	  switch (argv[0][0]) {
@@ -397,7 +422,6 @@ main(int argc, char **argv)
               {
                   unsigned char   grades[] = { 0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80 };
 
-                  if (filter == 0xff) filter=0x00;
                   while (--argc>0) {
                       argv++;
                       if (argv[0][0] == '-') {
@@ -428,13 +452,18 @@ main(int argc, char **argv)
 	}
 
         /* ready for the data now. */
-	prep_hist();
+
+        HistogramTable table(filter);
+        if (phhi < 0) {
+            phhi = table.MAXADU;
+        }
+
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (make_hist(event, split, ev, reset, style, phlo, phhi)) {
+                if (table.make_hist(event, split, ev, reset, style, phlo, phhi)) {
                     fwrite(ev, sizeof(data_str), 1, stdout);
                 }
             }
