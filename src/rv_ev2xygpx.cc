@@ -31,7 +31,7 @@ public:
 
     HistogramTable();
     void dump_table();
-    int make_classification(calctype do_what, data_str *ev, int num,
+    int make_classification(calctype do_what, data_str *ev,
                             int event, int split, char *sty, double rst);
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
@@ -218,7 +218,6 @@ int
 HistogramTable::make_classification(
         calctype do_what,
         data_str *ev,
-        int num,
         int event,
         int split,
         char *sty,
@@ -230,116 +229,124 @@ HistogramTable::make_classification(
     register int		j;
     short			phj, sum, phe[9], hsum;
 
-    for ( ; num--; ev++) {
-        /*
-         *  Get some gross event parameters
-         */
-        if (ev->data[4] < ev_min) ev_min = ev->data[4];
-        if (ev->data[4] < event) { nbevth++; continue; }
-        /*
-         *  Insert the reset clock correction
-         */
-        switch (*sty) {
-          case '6':
-            ev->data[7] -= ev->data[6]*rst;
-            ev->data[4] -= ev->data[3]*rst;
-            ev->data[1] -= ev->data[0]*rst;
-          case '3':
-            ev->data[8] -= ev->data[7]*rst;
-            ev->data[2] -= ev->data[1]*rst;
-          case '1':
-            ev->data[5] -= ev->data[4]*rst;
-          default:	break;		/* no correction */
-        }
-        /*
-         *  Characterize event & accumulate most of pha
-         */
-        const int p4 = ev->data[4];
-        int p9 = 0;
-        for (j = 0, map = 0, sum = 0; j < 9; j++) {
-            phe[j] = phj = ev->data[j];
+    /*
+     *  Get some gross event parameters
+     */
+    if (ev->data[4] < ev_min) ev_min = ev->data[4];
+    if (ev->data[4] < event) { nbevth++; return 0; }
+    /*
+     *  Insert the reset clock correction
+     */
+    switch (*sty) {
+      case '6':
+        ev->data[7] -= ev->data[6]*rst;
+        ev->data[4] -= ev->data[3]*rst;
+        ev->data[1] -= ev->data[0]*rst;
+      case '3':
+        ev->data[8] -= ev->data[7]*rst;
+        ev->data[2] -= ev->data[1]*rst;
+      case '1':
+        ev->data[5] -= ev->data[4]*rst;
+      default:	break;		/* no correction */
+    }
+    /*
+     *  Characterize event & accumulate most of pha
+     */
+    const int p4 = ev->data[4];
+    int p9 = 0;
+    for (j = 0, map = 0, sum = 0; j < 9; j++) {
+        phe[j] = phj = ev->data[j];
 
-            switch (do_what) {
-              case p_9:
-                p9 += phj;
-                break;
-              case p_1357:
-                if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9 += phj;
-                break;
-              case p_17:
-                if ((j-1)*(j-7)*(j-4)==0) p9 += phj;
-                break;
-              case p_35:
-                if ((j-3)*(j-5)*(j-4)==0) p9 += phj;
-                break;
-              case p_list:
-                break;
-            }
+        switch (do_what) {
+          case p_9:
+            p9 += phj;
+            break;
+          case p_1357:
+            if ((j-1)*(j-3)*(j-5)*(j-7)*(j-4)==0) p9 += phj;
+            break;
+          case p_17:
+            if ((j-1)*(j-7)*(j-4)==0) p9 += phj;
+            break;
+          case p_35:
+            if ((j-3)*(j-5)*(j-4)==0) p9 += phj;
+            break;
+          case p_list:
+            break;
+        }
 
-            if (phj < split && j != 4) {
-                phe[j] = 0;
-                continue;
-            }
-            switch (j) {
-              case 0: map |= 0x01;           ; break;
-              case 1: map |= 0x02; sum += phj; break;
-              case 2: map |= 0x04;           ; break;
-              case 3: map |= 0x08; sum += phj; break;
-              case 4: 	     sum += phj; break;
-              case 5: map |= 0x10; sum += phj; break;
-              case 6: map |= 0x20;           ; break;
-              case 7: map |= 0x40; sum += phj; break;
-              case 8: map |= 0x80;           ; break;
-            }
+        if (phj < split && j != 4) {
+            phe[j] = 0;
+            continue;
         }
-        /*
-         *  Finish pha with extra pixels of L, Q, and O events
-         */
-        look_up *const ent = &table[map];
-        const int *xtr = ent->extr;
-        for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
-        /*
-         *  Accumulate statistics and various bounds
-         */
-        if (sum >= MAXADU) { noobnd++;  continue; }
-        if (sum > max_adu) max_adu = sum;
-        if (sum < min_adu) min_adu = sum;
-        if (ev->x < xn) xn = ev->x;
-        if (ev->x > xx) xx = ev->x;
-        if (ev->y < yn) yn = ev->y;
-        if (ev->y > yx) yx = ev->y;
-        xav += ev->x;
-        yav += ev->y;
-        ntotal += 1;
-        *ent->type += 1;
-        hsum = ent->hist[sum] += 1;
-        if (hsum > 2) {
-            if (sum > max_2ct) max_2ct = sum;
-            if (sum < min_2ct) min_2ct = sum;
-        }
-        {
-            int grd;
-            if (ent->type == &nsngle) { grd=0; } 
-            else { if (ent->type == &nsplus) { grd=1; }
-                else { if (ent->type == &npvert) {	grd=2; }
-                    else { if (ent->type == &npleft) { grd=3; }
-			else { if (ent->type == &nprght) { grd=4; } 
-                            else { if (ent->type == &npplus) { grd=5; } 
-                                else { if (ent->type == &nelnsq) { grd=6; } 
-                                    else { if (ent->type == &nother) { grd=7; }
-                                        else { grd=-1; } } } } } } } }
-            if (do_what == p_list) {
-                fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
-                {
-                    for (int i=0;i<9;i++) 
-			fprintf(stdout," %f",ev->data[i]);
-                    fprintf(stdout,"\n");
-                }
-            } else {
-                fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
-            }
+        switch (j) {
+          case 0: map |= 0x01;           ; break;
+          case 1: map |= 0x02; sum += phj; break;
+          case 2: map |= 0x04;           ; break;
+          case 3: map |= 0x08; sum += phj; break;
+          case 4: 	     sum += phj; break;
+          case 5: map |= 0x10; sum += phj; break;
+          case 6: map |= 0x20;           ; break;
+          case 7: map |= 0x40; sum += phj; break;
+          case 8: map |= 0x80;           ; break;
         }
     }
+    /*
+     *  Finish pha with extra pixels of L, Q, and O events
+     */
+    look_up *const ent = &table[map];
+    const int *xtr = ent->extr;
+    for (j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+    /*
+     *  Accumulate statistics and various bounds
+     */
+    if (sum >= MAXADU) { noobnd++;  return 0; }
+    if (sum > max_adu) max_adu = sum;
+    if (sum < min_adu) min_adu = sum;
+    if (ev->x < xn) xn = ev->x;
+    if (ev->x > xx) xx = ev->x;
+    if (ev->y < yn) yn = ev->y;
+    if (ev->y > yx) yx = ev->y;
+    xav += ev->x;
+    yav += ev->y;
+    ntotal += 1;
+    *ent->type += 1;
+    hsum = ent->hist[sum] += 1;
+    if (hsum > 2) {
+        if (sum > max_2ct) max_2ct = sum;
+        if (sum < min_2ct) min_2ct = sum;
+    }
+    {
+        int grd;
+        if (ent->type == &nsngle) {
+            grd=0;
+        } else if (ent->type == &nsplus) {
+            grd=1;
+        } else if (ent->type == &npvert) {
+            grd=2;
+        } else if (ent->type == &npleft) {
+            grd=3;
+        } else if (ent->type == &nprght) {
+            grd=4;
+        } else if (ent->type == &npplus) {
+            grd=5;
+        } else if (ent->type == &nelnsq) {
+            grd=6;
+        } else if (ent->type == &nother) {
+            grd=7;
+        } else {
+            grd=-1;
+        }
+        
+        if (do_what == p_list) {
+            fprintf(stdout,"%d %d %d %d p:",ev->x,ev->y,grd,sum);
+            for (int i=0;i<9;i++) 
+                fprintf(stdout," %f",ev->data[i]);
+            fprintf(stdout,"\n");
+        } else {
+            fprintf(stdout,"%d %d %d %d %d %d\n",ev->x,ev->y,grd,sum,p4,p9);
+        }
+    }
+
     return 1;
 }
 
@@ -432,8 +439,10 @@ main(int argc, char **argv)
         data_str eventdata[EVENTS];
 
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
-		tot += num;
-		table.make_classification(do_what, eventdata, num, event, split, style, reset);
+            tot += num;
+            for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
+                table.make_classification(do_what, ev, event, split, style, reset);
+            }
 	}
 	return(0);
 }
