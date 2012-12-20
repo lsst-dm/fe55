@@ -52,6 +52,7 @@ try:
     type(display)
 except NameError:
     display = False
+    warned = False
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -59,9 +60,14 @@ class EventsTestCase(unittest.TestCase):
     """A test case for Image"""
     def setUp(self):
         self.image = afwImage.ImageF(afwGeom.ExtentI(100, 200))
-        self.centers = [afwGeom.PointI(10, 30),
+        self.xy0 = 10, 30
+        self.centers = [afwGeom.PointI(*self.xy0),
                         afwGeom.PointI(50, 100),
                         ]
+
+        self.val0_0, self.val4_0 = 100, 666
+        self.image.set(self.xy0[0] - 1, self.xy0[1] - 1, self.val0_0)
+        self.image.set(self.xy0[0], self.xy0[1], self.val4_0)
 
         self.table = ras.HistogramTableGflt()
 
@@ -74,10 +80,15 @@ class EventsTestCase(unittest.TestCase):
         events = [ras.Event(self.image, ev) for ev in self.centers]
 
         ev = events[0]
+        self.assertEqual(ev.getData(0), self.val0_0)
+        self.assertEqual(ev[4], self.val4_0)
+
+        def badIndex():
+            ev[9]
+        self.assertRaises(IndexError, badIndex)
 
         def offChip():
             ras.Event(self.image, self.image.getBBox().getMax() + afwGeom.ExtentI(10, 10))
-
         utilsTests.assertRaisesLsstCpp(self, lsst.pex.exceptions.OutOfRangeException, offChip)
 
     if False:
@@ -90,7 +101,10 @@ class EventsTestCase(unittest.TestCase):
         def testEventTable_dump_hist(self):
             self.table.dump_hist()
     else:
-        print >> sys.stderr, "Skipping table.dump* tests"
+        global warned
+        if not warned:
+            print >> sys.stderr, "Skipping table.dump* tests"
+            warned = True
         
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
