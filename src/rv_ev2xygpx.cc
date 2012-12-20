@@ -22,40 +22,20 @@
 /*
  *  Accumulate the num events in the tables
  */
-int
-HistogramTableXygpx::process_event(
-        const data_str *ev,
-        int event,
-        int split,
-        RESET_STYLES sty,
-        double rst
-                             )
+bool
+HistogramTableXygpx::process_event(const data_str *ev
+                                  )
 {
     /*
      *  Get some gross event parameters
      */
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < event) { nbevth++; return 0; }
+    if (ev->data[4] < _event) { nbevth++; return false; }
 
     short phe[9];
     std::copy(ev->data, ev->data + 9, phe);
-    /*
-     *  Insert the reset clock correction
-     */
-    switch (sty) {
-      case T6:
-        phe[7] -= phe[6]*rst;
-        phe[4] -= phe[3]*rst;
-        phe[1] -= phe[0]*rst; // fall through
-      case T3:
-        phe[8] -= phe[7]*rst;
-        phe[2] -= phe[1]*rst; // fall through
-      case T1:
-        phe[5] -= phe[4]*rst;
-        break;
-      case TNONE:
-        break;
-    }
+
+    applyResetClockCorrection(phe);
     /*
      *  Characterize event & accumulate most of pha
      */
@@ -83,7 +63,7 @@ HistogramTableXygpx::process_event(
             break;
         }
 
-        if (phj < split && j != 4) {
+        if (phj < _split && j != 4) {
             phe[j] = 0;
             continue;
         }
@@ -205,14 +185,14 @@ main(int argc, char **argv)
 	  }
 	}
 
-        HistogramTableXygpx table(do_what);
+        HistogramTableXygpx table(do_what, event, split, style, reset);
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.process_event(ev, event, split, style, reset)) {
+                if (table.process_event(ev)) {
                     if (ev2pcf) {
                         continue;
                     }

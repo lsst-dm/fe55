@@ -24,5 +24,5 @@ from .rasmussenLib import *
 from .version import *
 
 import lsst.meas.algorithms
-lsst.meas.algorithms.AlgorithmRegistry.register("rasmussen", rasmussenControl)
+lsst.meas.algorithms.AlgorithmRegistry.register("rasmussen", Fe55Control)
 del lsst # cleanup namespace

@@ -27,40 +27,20 @@
 /*
  *  Accumulate the num events in the tables
  */
-int
-HistogramTableGflt::process_event(
-        const data_str *ev,
-        int event,
-        int split,
-        RESET_STYLES sty,
-        double rst
-                             )
+bool
+HistogramTableGflt::process_event(const data_str *ev
+                                 )
 {
     /*
      *  Get some gross event parameters
      */
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < event) { nbevth++; return 0; }
+    if (ev->data[4] < _event) { nbevth++; return false; }
 
     short phe[9];
     std::copy(ev->data, ev->data + 9, phe);
-    /*
-     *  Insert the reset clock correction
-     */
-    switch (sty) {
-      case T6:
-        phe[7] -= phe[6]*rst;
-        phe[4] -= phe[3]*rst;
-        phe[1] -= phe[0]*rst; // fall through
-      case T3:
-        phe[8] -= phe[7]*rst;
-        phe[2] -= phe[1]*rst; // fall through
-      case T1:
-        phe[5] -= phe[4]*rst;
-        break;
-      case TNONE:
-        break;
-    }
+
+    applyResetClockCorrection(phe);
     /*
      *  Characterize event & accumulate most of pha
      */
@@ -70,7 +50,7 @@ HistogramTableGflt::process_event(
     for (int j = 0; j < 9; j++) {
         const short phj = phe[j];
 
-        if (phj < split && j != 4) {
+        if (phj < _split && j != 4) {
             phe[j]=0;
             continue;
         }
@@ -105,13 +85,13 @@ HistogramTableGflt::process_event(
     }
     if (!accept && _filter & 0x80) {
         for (int j = 0; j < nnoto; j++) {
-            if (map == notomap[j]) return 0;
+            if (map == notomap[j]) return false;
         }
         accept = true;
     }
 
     if (!accept) {
-        return 0;
+        return false;
     }
 
     return finishEventProcessing(ev, phe, map);
@@ -204,7 +184,7 @@ main(int argc, char **argv)
 
         /* ready for the data now. */
 
-        HistogramTableGflt table(filter);
+        HistogramTableGflt table(filter, event, split, style, reset);
 
         if (phhi < 0) {
             phhi = HistogramTableGflt::MAXADU;
@@ -215,7 +195,7 @@ main(int argc, char **argv)
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
             for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.process_event(ev, event, split, style, reset)) {
+                if (table.process_event(ev)) {
                     if (table.sum >= phlo && table.sum < phhi) {
                         fwrite(ev, sizeof(data_str), 1, stdout);
                     }

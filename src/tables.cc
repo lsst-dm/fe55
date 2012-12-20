@@ -22,7 +22,9 @@
  *  and which extra pixels should be included in the summed pha,
  *  which only occurs for the L, Q and Other grades.
  */
-HistogramTableBase::HistogramTableBase(const int filter) : _filter(filter)
+HistogramTableBase::HistogramTableBase(int event, int split,
+                                       RESET_STYLES sty, double rst, const int filter) :
+    _event(event), _split(split), _filter(filter), _sty(sty), _rst(rst)
 {
     static
     const int extra[][4] = {  {4,4,4,4},
@@ -201,7 +203,29 @@ HistogramTableBase::HistogramTableBase(const int filter) : _filter(filter)
     nnoto+=sizeof(elnsq);
 }
 
-int
+/*
+ *  Insert the reset clock correction
+ */
+void
+HistogramTableBase::applyResetClockCorrection(short phe[9])
+{
+    switch (_sty) {
+      case T6:
+        phe[7] -= phe[6]*_rst;
+        phe[4] -= phe[3]*_rst;
+        phe[1] -= phe[0]*_rst; // fall through
+      case T3:
+        phe[8] -= phe[7]*_rst;
+        phe[2] -= phe[1]*_rst; // fall through
+      case T1:
+        phe[5] -= phe[4]*_rst;
+        break;
+      case TNONE:
+        break;
+    }
+}
+
+bool
 HistogramTableBase::finishEventProcessing(const data_str *ev,
                                           const short phe[9],
                                           const int map)
@@ -215,7 +239,7 @@ HistogramTableBase::finishEventProcessing(const data_str *ev,
     /*
      *  Accumulate statistics and various bounds
      */
-    if (sum >= MAXADU) { noobnd++;  return 0; }
+    if (sum >= MAXADU) { noobnd++;  return false; }
     if (sum > max_adu) max_adu = sum;
     if (sum < min_adu) min_adu = sum;
     if (ev->x < xn) xn = ev->x;
@@ -253,7 +277,7 @@ HistogramTableBase::finishEventProcessing(const data_str *ev,
         grd=-1;
     }
 
-    return 1;
+    return true;
 }
 
 /*
