@@ -58,3 +58,20 @@ Various swigged-up C++ classes for rasmussen
 %include "lsst/rasmussen/Event.h"
 %include "lsst/rasmussen/fe55.h"
 %include "lsst/rasmussen/tables.h"
+
+%extend lsst::rasmussen::Event {
+    %pythoncode {
+    def getData(self, *args):
+        """Access the int data[9] array (indexing on Event also works: ev[3])"""
+        i = args[0]
+        if i < 0 or i >= 9:
+            raise IndexError("Index %d is out of range 0..8" % i)
+
+        import ctypes
+        __data = 9*ctypes.c_float
+        __data = __data.from_address(int(self.data))
+        return __data[i]
+
+    __getitem__ = getData
+    }
+}
