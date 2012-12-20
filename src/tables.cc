@@ -310,38 +310,47 @@ HistogramTableBase::dump_table() const
  *  Dump the basic calibration file header
  */
 void
-HistogramTableBase::dump_head(const char *sfile, int event, int split, int total)          
+HistogramTableBase::dump_head(const char *sfile, int total)
 {
     char	line[NAMLEN], *c;
     (void)fprintf(stdout, "!\n");
     (void)fprintf(stdout, "!  QDP Basic Calibration File\n");
     (void)fprintf(stdout, "!\n");
     (void)fprintf(stdout, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
-    (void)fprintf(stdout, "!  Source_file  = %s\n", sfile);
-    (void)fprintf(stdout, "!  Event_thresh = %d\n", event);
-    (void)fprintf(stdout, "!  Split_thresh = %d\n", split);
+    (void)fprintf(stdout, "!  Source_file  = %s\n", sfile ? sfile : "unknown");
+    (void)fprintf(stdout, "!  Event_thresh = %d\n", _event);
+    (void)fprintf(stdout, "!  Split_thresh = %d\n", _split);
     //(void)fprintf(stdout, "!  Total_frames = %d\n", cnt);
     (void)fprintf(stdout, "!  Total_events = %d\n", ntotal);
     (void)fprintf(stdout, "!  Total_pixels = %d\n", (xx - xn)*(yx - yn));
     (void)fprintf(stdout, "!\n");
     (void)fprintf(stdout, "!  Events_below = %d\n", nbevth);
     (void)fprintf(stdout, "!  Events_above = %d\n", noobnd);
-    (void)fprintf(stdout, "!  Events_input = %d\n", total);
+    {
+        char buff[40];
+        if (total < 0) {
+            strcpy(buff, "unknown");
+        } else {
+            sprintf(buff, "%d", total);
+        }
+                
+        (void)fprintf(stdout, "!  Events_input = %s\n", buff);
+    }
     (void)fprintf(stdout, "!  PH4_minimum  = %d\n", ev_min);
     (void)fprintf(stdout, "!  PHS_minimum  = %d\n", min_adu);
     (void)fprintf(stdout, "!  PHS_Maximum  = %d\n", max_adu);
     (void)fprintf(stdout, "!  X_Minimum    = %d\n", xn);
-    (void)fprintf(stdout, "!  X_Average    = %d\n", xav/ntotal);
+    (void)fprintf(stdout, "!  X_Average    = %d\n", xav/(ntotal ? ntotal : 1));
     (void)fprintf(stdout, "!  X_Maximum    = %d\n", xx);
     (void)fprintf(stdout, "!  Y_Minimum    = %d\n", yn);
-    (void)fprintf(stdout, "!  Y_Average    = %d\n", yav/ntotal);
+    (void)fprintf(stdout, "!  Y_Average    = %d\n", yav/(ntotal ? ntotal : 1));
     (void)fprintf(stdout, "!  Y_Maximum    = %d\n", yx);
 
     (void)fprintf(stdout, "!\n");
     (void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
     (void)fprintf(stdout, "!\n");
 
-    if (strcmp(sfile, "unknown") == 0) {
+    if (!sfile || strcmp(sfile, "unknown") == 0) {
         return;
     }
         
@@ -367,13 +376,13 @@ HistogramTableBase::dump_head(const char *sfile, int event, int split, int total
  *  Dump the QDP header histogram table
  */
 void
-HistogramTableBase::dump_hist(int event, int split, const char *sfile) const
+HistogramTableBase::dump_hist(const char *sfile) const
 {
     (void)printf("!\n");
     (void)printf("!  QDP Header follows\n");
     (void)printf("!\n");
     (void)printf("lab top Event = %d Split = %d Source = %s\n",
-                  event, split, sfile);
+                 _event, _split, sfile ? sfile : "unknown");
     if (_efile[0]) (void)printf("lab file %s", _efile);
     (void)printf("lab g1 Pulse Height (ADU)\n");
     (void)printf("lab rot\n");

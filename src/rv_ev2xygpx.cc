@@ -212,8 +212,8 @@ main(int argc, char **argv)
 	}
 
         if (ev2pcf) {
-            table.dump_head(sfile, event, split, tot);
-            table.dump_hist(event, split, sfile);
+            table.dump_head(sfile, tot);
+            table.dump_hist(sfile);
         }
 
 	return 0;
