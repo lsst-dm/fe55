@@ -28,6 +28,8 @@ public:
 protected:
     enum { NMAP = 256 };
     struct look_up {
+        look_up() : type(0), extr(0), hist(0) {}
+
         int *type;
         const int *extr;
         int *hist;
