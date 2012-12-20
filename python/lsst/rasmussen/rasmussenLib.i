@@ -49,9 +49,12 @@ Various swigged-up C++ classes for rasmussen
 %shared_ptr(lsst::rasmussen::Fe55Control)
 
 %{
+#include "lsst/rasmussen/Event.h"
 #include "lsst/rasmussen/fe55.h"
 #include "lsst/rasmussen/tables.h"
 %}
 
+%include "lsst/rasmussen/rv.h"
+%include "lsst/rasmussen/Event.h"
 %include "lsst/rasmussen/fe55.h"
 %include "lsst/rasmussen/tables.h"
