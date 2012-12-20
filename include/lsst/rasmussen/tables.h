@@ -37,6 +37,7 @@ protected:
 
     void applyResetClockCorrection(short phe[9]);
     bool finishEventProcessing(const data_str *ev, const short phe[9], const int map);
+    int setGrdFromType(const int map);
 
     int histo[8][MAXADU];
     int nacc, nnoto;
@@ -47,6 +48,7 @@ protected:
     const int _filter;
 private:
     enum { NAMLEN = 512 };
+
     char _efile[NAMLEN];                // name of the electronics param file, found in the sfile.  Ughh
     RESET_STYLES _sty;
     double _rst;

@@ -35,7 +35,11 @@ HistogramTableGflt::process_event(const data_str *ev
      *  Get some gross event parameters
      */
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < _event) { nbevth++; return false; }
+    if (ev->data[4] < _event) {
+        nbevth++;
+        grd = -1;                       // We don't know map yet. N.b. grd is in HistogramTableBase.
+        return false;
+    }
 
     short phe[9];
     std::copy(ev->data, ev->data + 9, phe);
@@ -83,14 +87,18 @@ HistogramTableGflt::process_event(const data_str *ev
             break;
         }
     }
-    if (!accept && _filter & 0x80) {
+    if (!accept && (_filter & 0x80)) {
         for (int j = 0; j < nnoto; j++) {
-            if (map == notomap[j]) return false;
+            if (map == notomap[j]) {
+                grd = setGrdFromType(map); // n.b. grd is in HistogramTableBase
+                return false;
+            }
         }
         accept = true;
     }
 
     if (!accept) {
+        grd = setGrdFromType(map);      // n.b. grd is in HistogramTableBase
         return false;
     }
 

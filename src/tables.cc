@@ -256,29 +256,39 @@ HistogramTableBase::finishEventProcessing(const data_str *ev,
         if (sum < min_2ct) min_2ct = sum;
     }
 
-    // n.b. grd is in HistogramTableBase
-    if (ent->type == &nsngle) {
-        grd=0;
-    } else if (ent->type == &nsplus) {
-        grd=1;
-    } else if (ent->type == &npvert) {
-        grd=2;
-    } else if (ent->type == &npleft) {
-        grd=3;
-    } else if (ent->type == &nprght) {
-        grd=4;
-    } else if (ent->type == &npplus) {
-        grd=5;
-    } else if (ent->type == &nelnsq) {
-        grd=6;
-    } else if (ent->type == &nother) {
-        grd=7;
-    } else {
-        grd=-1;
-    }
+    grd = setGrdFromType(map);    // n.b. grd is in HistogramTableBase
 
     return true;
 }
+
+/*********************************************************************************************************/
+
+int
+HistogramTableBase::setGrdFromType(const int map)
+{
+    const int *type = table[map].type;
+    
+    if (type == &nsngle) {
+        return 0;
+    } else if (type == &nsplus) {
+        return 1;
+    } else if (type == &npvert) {
+        return 2;
+    } else if (type == &npleft) {
+        return 3;
+    } else if (type == &nprght) {
+        return 4;
+    } else if (type == &npplus) {
+        return 5;
+    } else if (type == &nelnsq) {
+        return 6;
+    } else if (type == &nother) {
+        return 7;
+    } else {
+        return -1;
+    }
+}
+
 
 /*
  *  For diagnostic purposes, dump the grade table in CLASSIFY format.
