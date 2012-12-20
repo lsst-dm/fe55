@@ -69,17 +69,18 @@ class EventsTestCase(unittest.TestCase):
         self.image.set(self.xy0[0] - 1, self.xy0[1] - 1, self.val0_0)
         self.image.set(self.xy0[0], self.xy0[1], self.val4_0)
 
-        self.table = ras.HistogramTableGflt()
+        self.events = [ras.Event(self.image, ev) for ev in self.centers]
+
+        self.table = ras.HistogramTableGflt(200, 0)
 
     def tearDown(self):
         del self.image
         del self.centers
+        del self.events
         del self.table
 
     def testCtor(self):
-        events = [ras.Event(self.image, ev) for ev in self.centers]
-
-        ev = events[0]
+        ev = self.events[0]
         self.assertEqual(ev.getData(0), self.val0_0)
         self.assertEqual(ev[4], self.val4_0)
 
@@ -91,6 +92,10 @@ class EventsTestCase(unittest.TestCase):
             ras.Event(self.image, self.image.getBBox().getMax() + afwGeom.ExtentI(10, 10))
         utilsTests.assertRaisesLsstCpp(self, lsst.pex.exceptions.OutOfRangeException, offChip)
 
+    def testProcessOneEvent(self):
+        self.table.process_event(self.events[0])
+        self.table.dump_hist()
+        
     if False:
         def testEventTable_dump_table(self):
             self.table.dump_table()
