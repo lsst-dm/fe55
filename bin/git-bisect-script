@@ -1,0 +1,6 @@
+#/usr/bin/env sh
+# Usable by git-bisect
+
+scons -Q || exit 125 # skip this revision
+
+$RASMUSSEN_DIR/tests/regression
