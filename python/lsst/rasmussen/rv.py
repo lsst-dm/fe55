@@ -76,14 +76,16 @@ def processImage(thresh, fileName, grades=range(9), split=None):
                                      ds9.RED, ds9.GREEN)))
     with ds9.Buffering():
         for ev in events:
-            if not table.process_event(ev):
-                if display:
-                    ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ds9.CYAN)
-
-                continue
+            success = table.process_event(ev)
             
             grd = table.grd
-            print "RHL", grd
+            if not success:
+                if display:
+                    ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ctypes[grd])
+                    ds9.dot(str(grd), ev.x + 1.5, ev.y, frame=0, ctype=ctypes[grd])
+                    
+                continue
+
             assert grd in grades
 
             if display:
@@ -92,6 +94,7 @@ def processImage(thresh, fileName, grades=range(9), split=None):
                           (ev.x + size, ev.y + size),
                           (ev.x - size, ev.y + size),
                           (ev.x - size, ev.y - size)], frame=0, ctype=ctypes[grd])
+                ds9.dot(str(grd), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[grd])
                     
     #table.dump_head()
     if False:
