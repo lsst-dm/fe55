@@ -4,6 +4,7 @@
 #
 tmpfile="${TEMPDIR:-/tmp}/$(whoami)-$$"
 trap "rm -f $tmpfile" 0
+result=true
 
 function myTest()
 {
@@ -23,6 +24,8 @@ function myTest()
 if cmp $tmpfile $truth > /dev/null 2>&1; then
    echo Pass $testBasename >&2
 else
+   result=false
+
    echo Fail $testBasename >&2
    if True; then
        diff $tmpfile $truth | head -10 >&2
@@ -34,3 +37,5 @@ fi
 
 myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
 myTest $RASMUSSEN_DIR/src/rv_ev2xygpx --ev2pcf 30 10
+
+$result
