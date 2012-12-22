@@ -674,6 +674,29 @@ main(int argc,char *argv[])
 
     if (medianbias) free(medianbias);
 
+#if 0					/* dump the first image to "image.fits" */
+  {
+     if (fits_create_file(&ffout,"!image.fits",&status)) {
+       printerror(status);
+     }
+
+     long naxis[2] = {nx, ny};
+     if (fits_create_img(ffout,LONG_IMG,2,naxis,&status)) {
+	fprintf(stderr,"can't create image..\n");
+	printerror(status);
+     }
+     long fpixel[2],lpixel[2];
+     
+     fpixel[0]=1L;	        fpixel[1]=1L;
+     lpixel[0]=(long)nx;	lpixel[1]=(long)ny;
+     
+     if (fits_write_subset(ffout,TINT,fpixel,lpixel,dp[0],&status))
+	printerror(status);
+     if (fits_close_file(ffout,&status))
+	printerror(status);
+  }
+#endif
+
     /* now it should be possible to just analyse the *dp pointers */
     if (histmode) {
       for(fi=0;fi<fni;fi++) {
