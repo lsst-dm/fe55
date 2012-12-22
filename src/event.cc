@@ -8,14 +8,15 @@ namespace lsst {
 namespace rasmussen {
 
 Event::Event(afw::image::Image<float> const& im,        // image containing event
-             lsst::afw::geom::Point2I const& cen, // central pixel
-             int framenum_,                      // frame ID of image
-             int chipnum_                        // chip ID for image
+             lsst::afw::geom::Point2I const& cen,       // central pixel
+             int framenum_,                             // frame ID of image
+             int chipnum_                               // chip ID for image
             )
 {
-    if (!im.getBBox(afw::image::PARENT).contains(cen)) {
+    if (!im.getBBox(afw::image::PARENT).contains(cen - afw::geom::ExtentI(1, 1)) ||
+        !im.getBBox(afw::image::PARENT).contains(cen + afw::geom::ExtentI(1, 1))) {
         throw LSST_EXCEPT(lsst::pex::exceptions::OutOfRangeException,
-                          str(boost::format("%d is not contained in %d")
+                          str(boost::format("%d is too close to the edge of image of size %d")
                               % cen % im.getBBox(afw::image::PARENT)));
     }
 
