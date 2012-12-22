@@ -47,6 +47,8 @@ Various swigged-up C++ classes for rasmussen
 %import "lsst/meas/algorithms/algorithmsLib.i"
 
 %shared_ptr(lsst::rasmussen::Fe55Control)
+%shared_ptr(data_str)
+%shared_ptr(lsst::rasmussen::Event)
 
 %{
 #include "lsst/rasmussen/Event.h"
@@ -58,6 +60,8 @@ Various swigged-up C++ classes for rasmussen
 %include "lsst/rasmussen/Event.h"
 %include "lsst/rasmussen/fe55.h"
 %include "lsst/rasmussen/tables.h"
+
+%template(vectorEvent) std::vector<boost::shared_ptr<lsst::rasmussen::Event> >;
 
 %extend lsst::rasmussen::Event {
     %pythoncode {

@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "lsst/rasmussen/Event.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/image/Image.h"
@@ -36,6 +37,27 @@ Event::Event(afw::image::Image<float> const& im,        // image containing even
     data[i++] = imData( 0,  1);
     data[i++] = imData( 1,  1);
 }
-        
+
+std::vector<PTR(Event)>
+readEventFile(std::string const& fileName)
+{
+    FILE *fp = fopen(fileName.c_str(), "r");
+    if (!fp) {
+        throw LSST_EXCEPT(lsst::pex::exceptions::IoErrorException,
+                          str(boost::format("Unable to open %s for read")
+                              % fileName));
+    }
+
+    std::vector<PTR(Event)> events;
+
+    data_str event;
+    while (fread((void *)&event, sizeof(data_str), 1, fp) > 0) {
+        events.push_back(PTR(Event)(new Event(event)));
+    }
+
+    fclose(fp);
+
+    return events;
 }
-}
+
+}}
