@@ -56,6 +56,10 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
 
     image -= afwMath.makeStatistics(image, afwMath.MEDIAN).getValue()
 
+    if emulateMedpict:
+        sim = image.Factory(image, afwGeom.BoxI(afwGeom.PointI(2008, 0), image.getBBox().getMax()))
+        sim.set(0)
+
     if searchThresh is None:
         searchThresh = thresh
 
