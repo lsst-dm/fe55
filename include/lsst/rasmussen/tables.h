@@ -1,10 +1,14 @@
 #if !defined(LSST_RASMUSSEN_TABLE_H)
 #define LSST_RASMUSSEN_TABLE_H
+#include "ndarray.h"
 #include "lsst/rasmussen/Event.h"
 
+/**
+ * \brief Hello World
+ */
 class HistogramTableBase {
 public:
-    enum {MAXADU = 4096};
+    static const int MAXADU;
     enum RESET_STYLES { TNONE, T1, T3, T6, };
 
     HistogramTableBase(int event=0, int split=0,
@@ -22,23 +26,40 @@ public:
     int		min_adu, max_adu;
     int		min_2ct, max_2ct;
     int		xn, xx, yn, yx;
+
+#define USE_NDARRAY 1
+#if USE_NDARRAY
+    ndarray::Array<int, 2, 2> histo;
+#else
+    int histo[8][MAXADU];
+#endif
+
     // Values set by process_event
     int sum;                            // should be float?  But it's used as an array index
 protected:
     enum { NMAP = 256 };
     struct look_up {
-        look_up() : type(0), extr(0), hist(0) {}
+        look_up() : type(0), extr(0),
+#if USE_NDARRAY
+                    hist()
+#else
+                    hist(0)
+#endif
+        {}
 
         int *type;
         const int *extr;
+#if USE_NDARRAY
+    ndarray::Array<int, 1, 1> hist;
+#else
         int *hist;
+#endif
     } table[NMAP];
 
     void applyResetClockCorrection(short phe[9]);
     bool finishEventProcessing(lsst::rasmussen::Event *ev, const short phe[9], const int map);
     lsst::rasmussen::Event::Grade setGrdFromType(const int map);
 
-    int histo[8][MAXADU];
     int nacc, nnoto;
     unsigned char accmap[NMAP], notomap[NMAP];
 

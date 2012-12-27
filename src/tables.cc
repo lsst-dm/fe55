@@ -24,6 +24,9 @@
  */
 HistogramTableBase::HistogramTableBase(int event, int split,
                                        RESET_STYLES sty, double rst, const int filter) :
+#if USE_NDARRAY
+    histo(ndarray::allocate(ndarray::makeVector(8, MAXADU))),
+#endif
     _event(event), _split(split), _filter(filter), _efile(""), _sty(sty), _rst(rst)
 {
     static
@@ -202,6 +205,8 @@ HistogramTableBase::HistogramTableBase(int event, int split,
     for (int k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
     nnoto+=sizeof(elnsq);
 }
+
+const int HistogramTableBase::MAXADU = 4096;
 
 /*
  *  Insert the reset clock correction

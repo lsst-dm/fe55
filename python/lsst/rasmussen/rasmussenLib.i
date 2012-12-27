@@ -40,12 +40,23 @@ Various swigged-up C++ classes for rasmussen
 %lsst_exceptions()
 
 %{
+#define PY_ARRAY_UNIQUE_SYMBOL LSST_RASMUSSEN_NUMPY_ARRAY_API
+#include "numpy/arrayobject.h"
+#include "ndarray/swig.h"
+
 #include "lsst/pex/logging.h"
 #include "lsst/afw.h"
 #include "lsst/meas/algorithms.h"
 %}
 
 %import "lsst/meas/algorithms/algorithmsLib.i"
+
+%include "ndarray.i"
+%init %{
+    import_array();
+%}
+
+%declareNumPyConverters(ndarray::Array<int,2,2>);
 
 %shared_ptr(lsst::rasmussen::Fe55Control)
 %shared_ptr(data_str)
