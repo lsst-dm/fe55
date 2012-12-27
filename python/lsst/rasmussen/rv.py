@@ -133,20 +133,23 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     for i, ev in enumerate(events):
         success = table.process_event(ev)
         grd = table.grd
-        status.append([success, grd])
-
-        if success:
-            print "%d %d %d %d %g %d" % (ev.x, ev.y, table.grd, table.sum, ev[4], 0 if True else table.p9)
-            
+        status.append([grd, success])
     #
     # and Xygpx filter
     #
-    table = ras.HistogramTableXygpx(ras.HistogramTableXygpx.p_9, filt, thresh, split)
+    reset = 0.0
+    table = ras.HistogramTableXygpx(ras.HistogramTableXygpx.p_9, thresh, split,
+                                    ras.HistogramTableXygpx.T1, reset)
 
     for i, ev in enumerate(events):
-        success = table.process_event(ev)
-        grd = table.grd
-        status[i].append(success)
+        status[i] += [table.process_event(ev), table.sum, table.p9] if status[i][1] else [None, None, None]
+
+    if outputFile:
+        with open(outputFile, "w") as fd:
+            for stat, ev in zip(status, events):
+                grd, status1, status2, _sum, p9 = stat
+                if status2:
+                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, grd, _sum, ev[4], p9)
 
     size = 1.6                          # half-size of box to draw
     ctypes = dict(zip(range(-1, 8), (ds9.WHITE,
@@ -156,7 +159,7 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
 
     with ds9.Buffering():
         for ev, st in zip(events, status):
-            successGflt, grd, successXygpx = st
+            grd, successGflt, successXygpx, sumXygpx, p9 = st
             success = successXygpx
 
             if not success:
