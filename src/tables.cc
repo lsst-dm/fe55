@@ -24,7 +24,7 @@
  */
 HistogramTableBase::HistogramTableBase(int event, int split,
                                        RESET_STYLES sty, double rst, const int filter) :
-    _event(event), _split(split), _filter(filter), _sty(sty), _rst(rst)
+    _event(event), _split(split), _filter(filter), _efile(""), _sty(sty), _rst(rst)
 {
     static
     const int extra[][4] = {  {4,4,4,4},
