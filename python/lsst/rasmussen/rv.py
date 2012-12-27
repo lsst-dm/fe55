@@ -155,24 +155,31 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                                     ras.HistogramTableXygpx.T1, reset)
 
     for i, ev in enumerate(events):
-        status[i] += [table.process_event(ev), table.sum, table.p9] if status[i][0] else [None, None, None]
+        status[i] += [table.process_event(ev), table.sum] if status[i][0] else [None, None]
 
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
-                status1, status2, _sum, p9 = stat
+                status1, status2, _sum = stat
                 if status2:
-                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], p9)
+                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], ev.p9)
 
     size = 1.6                          # half-size of box to draw
-    ctypes = dict(zip(range(-1, 8), (ds9.WHITE,
-                                     ds9.RED, ds9.GREEN, ds9.BLUE,      # Grade: 0 1 2
-                                     ds9.CYAN, ds9.MAGENTA, ds9.YELLOW, #        3 4 5
-                                     ds9.WHITE, ds9.RED)))              #        6 7
+    ctypes = dict(zip(range(-1, 8),
+                      (ds9.WHITE,   # UNKNOWN
+                       ds9.RED,     # SINGLE                 Single pixel
+                       ds9.GREEN,   # SINGLE_P_CORNER        Single pixel + corner(s)
+                       ds9.BLUE,    # VERTICAL_SPLIT         Vertical split (+ detached corner(s))
+                       ds9.CYAN,    # LEFT_SPLIT             Left split (+ detached corner(s))
+                       ds9.MAGENTA, # RIGHT_SPLIT            Right split (+ detached corner(s))
+                       ds9.YELLOW,  # SINGLE_SIDED_P_CORNER  Single-sided split + touched corner
+                       ds9.WHITE,   # ELL_SQUARE_P_CORNER    L or square (+ detached corner)
+                       ds9.RED      # OTHER                  all others
+                       )))
 
     with ds9.Buffering():
         for ev, st in zip(events, status):
-            successGflt, successXygpx, sumXygpx, p9 = st
+            successGflt, successXygpx, sumXygpx = st
             success = successXygpx
 
             if not success:

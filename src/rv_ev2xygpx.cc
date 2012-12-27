@@ -41,23 +41,23 @@ HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
      */
     unsigned char map = 0;
 
-    p9 = 0;                             // in HistogramTableBase
+    ev->p9 = 0;
     sum = 0;                            // in HistogramTableBase
     for (int j = 0; j < 9; j++) {
         const short phj = phe[j];
 
         switch (_do_what) {
           case p_9:
-            p9 += phj;
+            ev->p9 += phj;
             break;
           case p_1357:
-            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) p9 += phj;
+            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) ev->p9 += phj;
             break;
           case p_17:
-            if (j == 1 || j == 7 || j == 4) p9 += phj;
+            if (j == 1 || j == 7 || j == 4) ev->p9 += phj;
             break;
           case p_35:
-            if (j == 3 || j == 5 || j == 4) p9 += phj;
+            if (j == 3 || j == 5 || j == 4) ev->p9 += phj;
             break;
           case p_list:
             break;
@@ -204,8 +204,8 @@ main(int argc, char **argv)
                         }
                         fprintf(stdout,"\n");
                     } else {
-                        fprintf(stdout,"%d %d %d %d %g %d\n",ev.x,ev.y, ev.grade, table.sum,
-                                ev.data[4], table.p9);
+                        fprintf(stdout,"%d %d %d %d %g %g\n",ev.x, ev.y, ev.grade, table.sum,
+                                ev.data[4], ev.p9);
                     }
                     
                 }

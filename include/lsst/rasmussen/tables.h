@@ -79,10 +79,6 @@ public:
         HistogramTableBase(event, split, sty, rst), _do_what(do_what) {}
 
     virtual bool process_event(lsst::rasmussen::Event *ev);
-
-    // Value set by process_event
-    int p9;
-
 private:
     const calctype _do_what;
 };
