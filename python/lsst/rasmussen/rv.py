@@ -44,6 +44,15 @@ import lsst.rasmussen as ras
 import numpy
 
 try:
+    import matplotlib.pyplot as plt
+    try:
+        fig
+    except NameError:
+        fig = None
+except ImportError:
+    plt = None
+
+try:
     type(display)
 except NameError:
     display = False
@@ -167,14 +176,14 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     size = 1.6                          # half-size of box to draw
     ctypes = dict(zip(range(-1, 8),
                       (ds9.WHITE,   # UNKNOWN
-                       ds9.RED,     # SINGLE                 Single pixel
-                       ds9.GREEN,   # SINGLE_P_CORNER        Single pixel + corner(s)
-                       ds9.BLUE,    # VERTICAL_SPLIT         Vertical split (+ detached corner(s))
-                       ds9.CYAN,    # LEFT_SPLIT             Left split (+ detached corner(s))
-                       ds9.MAGENTA, # RIGHT_SPLIT            Right split (+ detached corner(s))
-                       ds9.YELLOW,  # SINGLE_SIDED_P_CORNER  Single-sided split + touched corner
-                       ds9.WHITE,   # ELL_SQUARE_P_CORNER    L or square (+ detached corner)
-                       ds9.RED      # OTHER                  all others
+                       ds9.RED,     # 0 SINGLE                 Single pixel
+                       ds9.GREEN,   # 1 SINGLE_P_CORNER        Single pixel + corner(s)
+                       ds9.BLUE,    # 2 VERTICAL_SPLIT         Vertical split (+ detached corner(s))
+                       ds9.CYAN,    # 3 LEFT_SPLIT             Left split (+ detached corner(s))
+                       ds9.MAGENTA, # 4 RIGHT_SPLIT            Right split (+ detached corner(s))
+                       ds9.YELLOW,  # 5 SINGLE_SIDED_P_CORNER  Single-sided split + touched corner
+                       ds9.WHITE,   # 6 ELL_SQUARE_P_CORNER    L or square (+ detached corner)
+                       ds9.RED      # 7 OTHER                  all others
                        )))
 
     with ds9.Buffering():
@@ -204,6 +213,38 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
             table.dump_head(fd)
             table.dump_hist(fd)
     #table.dump_table()
+
+    if plt:
+        global fig
+        if fig is None:
+            fig = plt.figure()
+        else:
+            fig.clf()
+        axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
+
+        x = np.arange(0, table.MAXADU)
+        for g, label in enumerate(["N(S)",
+                                   "N(S+)",
+                                   "N(Pv)",
+                                   "N(Pl)",
+                                   "N(Pr)",
+                                   "N(P+)",
+                                   "N(L+Q)",
+                                   "N(O)",]):
+            if g in grades:
+                y = table.histo[g]
+
+                
+                axes.step(x, np.where(y > 0, np.log10(y), -1), label="%d %s" % (g, label),
+                         where='mid',
+                         color="black" if ctypes[g] == "white" else ctypes[g])
+
+        axes.set_xlabel("Pulse Height (ADU)")
+        axes.set_ylabel("lg(N)")
+        axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
+        axes.set_ylim(-0.1, axes.get_ylim()[1])
+        axes.legend(loc=1)
+        fig.show()
 
     return table, image, events
 
