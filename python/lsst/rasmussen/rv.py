@@ -30,7 +30,9 @@ import os
 import os.path
 import sys
 import numpy as np
+import lsst.daf.base as dafBase
 import lsst.pex.exceptions
+import lsst.afw.cameraGeom as afwCameraGeom
 import lsst.afw.detection as afwDetect
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -47,23 +49,50 @@ except NameError:
     display = False
     showMask = False
 
+def makeAmp(md, emulateMedpict=False):
+    startData      = 0    if emulateMedpict else 50
+    startOverclock = 2008 if emulateMedpict else 2065
+
+    gain, readNoise, saturation = 1.0, 5.0, 40000
+    eparams = afwCameraGeom.ElectronicParams(gain, readNoise, saturation)
+
+    allPixels = afwGeom.BoxI(afwGeom.Point2I(0, 0), afwGeom.ExtentI(2116, 1000))
+    biasSec = afwGeom.BoxI(afwGeom.PointI(startOverclock, 0),
+                           allPixels.getMax())
+    dataSec = afwGeom.BoxI(afwGeom.PointI(startData, 0),
+                           afwGeom.PointI(startOverclock - 1, allPixels.getMaxY()))
+    #
+    # Check those values from the header... except that they are absent so we can't
+    #
+    assert allPixels.getWidth() == md.get("WIDTH")
+    assert allPixels.getHeight() == md.get("HEIGHT")
+    ccdSer = md.get("CCD_SER") if False else 0 # not set
+
+    return afwCameraGeom.Amp(afwCameraGeom.Id(ccdSer), allPixels, biasSec, dataSec, eparams)
+
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=None, emulateMedpict=False,
                  outputFile=None,
                  showRejects=False, showUnknown=False, showGrades=True):
-    image = afwImage.ImageF(fileName)
 
-    image -= afwMath.makeStatistics(image, afwMath.MEDIAN).getValue()
+    md = dafBase.PropertyList()
+    image = afwImage.ImageF(fileName, 1, md)
+    amp = makeAmp(md)
+
+    bias = image.Factory(image, amp.getBiasSec())
 
     if emulateMedpict:
-        sim = image.Factory(image, afwGeom.BoxI(afwGeom.PointI(2008, 0), image.getBBox().getMax()))
-        sim.set(0)
+        image -= afwMath.makeStatistics(image, afwMath.MEDIAN).getValue()
+        bias.set(0)
+    else:
+        image -= afwMath.makeStatistics(bias, afwMath.MEDIAN).getValue()
 
     if searchThresh is None:
         searchThresh = thresh
 
-    fs = afwDetect.FootprintSet(image, afwDetect.Threshold(searchThresh))
+    dataSec = image.Factory(image, amp.getDataSec())
+    fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
 
     if display:
         if showMask:
@@ -77,26 +106,11 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     for foot in fs.getFootprints():
         for i, peak in enumerate(foot.getPeaks()):
             x, y = peak.getIx(), peak.getIy()
-
-            if x >= 2008:               # ignore overclock
-                continue
-
-            if False:
-                if x == 793 and y == 59:
-                    ds9.pan(x, y)
-                    import pdb; pdb.set_trace() 
-            
-            if i > 0:
-                if np.hypot(x - x0, y - y0) < 0: # XXX
-                    x0, y0 = x, y
-                    continue
-
-            x0, y0 = x, y
             #
             # medpict fails to find some events with two identical adjacent peak values,
-            # in particular it uses this peak criterion
+            # in particular it uses th peak criterion embodied in the following logic
             #
-            # If you make emulateMedpict == False and run showMedpict(dmEvents)
+            # If you set emulateMedpict == False and run showMedpict(dmEvents)
             # you'll see the real events it missed
             #
             if emulateMedpict:
