@@ -27,6 +27,7 @@ else
    result=false
 
    echo Fail $testBasename >&2
+   wc -l $tmpfile $truth | head -2
    if True; then
        diff $tmpfile $truth | head -10 >&2
    else
