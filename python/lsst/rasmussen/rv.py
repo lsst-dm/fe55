@@ -72,8 +72,8 @@ def makeAmp(md, emulateMedpict=False):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=None, emulateMedpict=False,
-                 outputFile=None,
+def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=None,
+                 emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
                  showRejects=False, showUnknown=False, showGrades=True):
 
     md = dafBase.PropertyList()
@@ -158,8 +158,8 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     for i, ev in enumerate(events):
         status[i] += [table.process_event(ev), table.sum, table.p9] if status[i][1] else [None, None, None]
 
-    if outputFile:
-        with open(outputFile, "w") as fd:
+    if outputEventsFile:
+        with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
                 grd, status1, status2, _sum, p9 = stat
                 if status2:
@@ -195,9 +195,10 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                 if showGrades:
                     ds9.dot(str(grd), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[grd])
 
-    with open("XXX", "w") as fd:
-        table.dump_head(fd)
-        table.dump_hist(fd)
+    if outputHistFile:
+        with open(outputHistFile, "w") as fd:
+            table.dump_head(fd)
+            table.dump_hist(fd)
     #table.dump_table()
 
     return table, image, events
