@@ -12,8 +12,8 @@ public:
     virtual ~HistogramTableBase() {}
     virtual bool process_event(const data_str *ev) { return false; }
 
-    void dump_head(const char *sfile=NULL, int total=-1);
-    void dump_hist(const char *sfile=NULL) const;
+    void dump_head(FILE *fd=stdout, const char *sfile=NULL, int total=-1);
+    void dump_hist(FILE *fd=stdout, const char *sfile=NULL) const;
     void dump_table() const;
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,

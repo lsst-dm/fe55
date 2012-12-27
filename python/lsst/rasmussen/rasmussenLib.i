@@ -35,6 +35,7 @@ Various swigged-up C++ classes for rasmussen
 %naturalvar;  // use const reference typemaps
 
 %include "lsst/p_lsstSwig.i"
+%include "file.i"
 
 %lsst_exceptions()
 

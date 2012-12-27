@@ -212,8 +212,8 @@ main(int argc, char **argv)
 	}
 
         if (ev2pcf) {
-            table.dump_head(sfile, tot);
-            table.dump_hist(sfile);
+            table.dump_head(stdout, sfile, tot);
+            table.dump_hist(stdout, sfile);
         }
 
 	return 0;

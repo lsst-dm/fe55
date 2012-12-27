@@ -50,6 +50,7 @@ except NameError:
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=None, emulateMedpict=False,
+                 outputFile=None,
                  showRejects=False, showUnknown=False, showGrades=True):
     image = afwImage.ImageF(fileName)
 
@@ -172,13 +173,11 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                           (ev.x - size, ev.y - size)], frame=0, ctype=ctypes[grd])
                 if showGrades:
                     ds9.dot(str(grd), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[grd])
-                    
-    #table.dump_head()
-    if False:
-        table.dump_hist()
-        
-    if False:
-        table.dump_table()
+
+    with open("XXX", "w") as fd:
+        table.dump_head(fd)
+        table.dump_hist(fd)
+    #table.dump_table()
 
     return table, image, events
 

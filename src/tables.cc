@@ -317,22 +317,23 @@ HistogramTableBase::dump_table() const
  *  Dump the basic calibration file header
  */
 void
-HistogramTableBase::dump_head(const char *sfile, int total)
+HistogramTableBase::dump_head(FILE *fd,
+                              const char *sfile, int total)
 {
     char	line[NAMLEN], *c;
-    (void)fprintf(stdout, "!\n");
-    (void)fprintf(stdout, "!  QDP Basic Calibration File\n");
-    (void)fprintf(stdout, "!\n");
-    (void)fprintf(stdout, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
-    (void)fprintf(stdout, "!  Source_file  = %s\n", sfile ? sfile : "unknown");
-    (void)fprintf(stdout, "!  Event_thresh = %d\n", _event);
-    (void)fprintf(stdout, "!  Split_thresh = %d\n", _split);
-    //(void)fprintf(stdout, "!  Total_frames = %d\n", cnt);
-    (void)fprintf(stdout, "!  Total_events = %d\n", ntotal);
-    (void)fprintf(stdout, "!  Total_pixels = %d\n", (xx - xn)*(yx - yn));
-    (void)fprintf(stdout, "!\n");
-    (void)fprintf(stdout, "!  Events_below = %d\n", nbevth);
-    (void)fprintf(stdout, "!  Events_above = %d\n", noobnd);
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  QDP Basic Calibration File\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  Working_dir  = %s\n", getcwd((char *)0, NAMLEN));
+    (void)fprintf(fd, "!  Source_file  = %s\n", sfile ? sfile : "unknown");
+    (void)fprintf(fd, "!  Event_thresh = %d\n", _event);
+    (void)fprintf(fd, "!  Split_thresh = %d\n", _split);
+    //(void)fprintf(fd, "!  Total_frames = %d\n", cnt);
+    (void)fprintf(fd, "!  Total_events = %d\n", ntotal);
+    (void)fprintf(fd, "!  Total_pixels = %d\n", (xx - xn)*(yx - yn));
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  Events_below = %d\n", nbevth);
+    (void)fprintf(fd, "!  Events_above = %d\n", noobnd);
     {
         char buff[40];
         if (total < 0) {
@@ -341,21 +342,21 @@ HistogramTableBase::dump_head(const char *sfile, int total)
             sprintf(buff, "%d", total);
         }
                 
-        (void)fprintf(stdout, "!  Events_input = %s\n", buff);
+        (void)fprintf(fd, "!  Events_input = %s\n", buff);
     }
-    (void)fprintf(stdout, "!  PH4_minimum  = %d\n", ev_min);
-    (void)fprintf(stdout, "!  PHS_minimum  = %d\n", min_adu);
-    (void)fprintf(stdout, "!  PHS_Maximum  = %d\n", max_adu);
-    (void)fprintf(stdout, "!  X_Minimum    = %d\n", xn);
-    (void)fprintf(stdout, "!  X_Average    = %d\n", xav/(ntotal ? ntotal : 1));
-    (void)fprintf(stdout, "!  X_Maximum    = %d\n", xx);
-    (void)fprintf(stdout, "!  Y_Minimum    = %d\n", yn);
-    (void)fprintf(stdout, "!  Y_Average    = %d\n", yav/(ntotal ? ntotal : 1));
-    (void)fprintf(stdout, "!  Y_Maximum    = %d\n", yx);
+    (void)fprintf(fd, "!  PH4_minimum  = %d\n", ev_min);
+    (void)fprintf(fd, "!  PHS_minimum  = %d\n", min_adu);
+    (void)fprintf(fd, "!  PHS_Maximum  = %d\n", max_adu);
+    (void)fprintf(fd, "!  X_Minimum    = %d\n", xn);
+    (void)fprintf(fd, "!  X_Average    = %d\n", xav/(ntotal ? ntotal : 1));
+    (void)fprintf(fd, "!  X_Maximum    = %d\n", xx);
+    (void)fprintf(fd, "!  Y_Minimum    = %d\n", yn);
+    (void)fprintf(fd, "!  Y_Average    = %d\n", yav/(ntotal ? ntotal : 1));
+    (void)fprintf(fd, "!  Y_Maximum    = %d\n", yx);
 
-    (void)fprintf(stdout, "!\n");
-    (void)fprintf(stdout, "!  Exclusive grades -- corrected L+Q.\n");
-    (void)fprintf(stdout, "!\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  Exclusive grades -- corrected L+Q.\n");
+    (void)fprintf(fd, "!\n");
 
     if (!sfile || strcmp(sfile, "unknown") == 0) {
         return;
@@ -364,12 +365,12 @@ HistogramTableBase::dump_head(const char *sfile, int total)
     FILE * const fp = fopen(sfile, "r");
     if (fp == NULL) return;
 
-    (void)fprintf(stdout, "!\n");
-    (void)fprintf(stdout, "!  Experimental parameters\n");
-    (void)fprintf(stdout, "!\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  Experimental parameters\n");
+    (void)fprintf(fd, "!\n");
     while (fgets(line, NAMLEN-1, fp)) {
         if (line[0] == '#') continue;
-        (void)fprintf(stdout, "!  %s", line);
+        (void)fprintf(fd, "!  %s", line);
         if (!strncmp(line, "evlist  = ", 10)) {
             (void)strcpy(_efile, &line[10]);
             for (c = _efile; *c; c++)
@@ -383,47 +384,48 @@ HistogramTableBase::dump_head(const char *sfile, int total)
  *  Dump the QDP header histogram table
  */
 void
-HistogramTableBase::dump_hist(const char *sfile) const
+HistogramTableBase::dump_hist(FILE *fd,
+                              const char *sfile) const
 {
-    (void)printf("!\n");
-    (void)printf("!  QDP Header follows\n");
-    (void)printf("!\n");
-    (void)printf("lab top Event = %d Split = %d Source = %s\n",
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  QDP Header follows\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "lab top Event = %d Split = %d Source = %s\n",
                  _event, _split, sfile ? sfile : "unknown");
-    if (_efile[0]) (void)printf("lab file %s", _efile);
-    (void)printf("lab g1 Pulse Height (ADU)\n");
-    (void)printf("lab rot\n");
-    (void)printf("lab g2 N(S)\nlab g3 N(S+)\n");
-    (void)printf("lab g4 N(Pv)\nlab g5 N(Pl)\n");
-    (void)printf("lab g6 N(Pr)\nlab g7 N(P+)\n");
-    (void)printf("lab g8 N(L+Q)\nlab g9 N(O)\n");
-    (void)printf("csize 0.75\n");
+    if (_efile[0]) (void)fprintf(fd, "lab file %s", _efile);
+    (void)fprintf(fd, "lab g1 Pulse Height (ADU)\n");
+    (void)fprintf(fd, "lab rot\n");
+    (void)fprintf(fd, "lab g2 N(S)\nlab g3 N(S+)\n");
+    (void)fprintf(fd, "lab g4 N(Pv)\nlab g5 N(Pl)\n");
+    (void)fprintf(fd, "lab g6 N(Pr)\nlab g7 N(P+)\n");
+    (void)fprintf(fd, "lab g8 N(L+Q)\nlab g9 N(O)\n");
+    (void)fprintf(fd, "csize 0.75\n");
 
     const int EXTADU = 8;
     const int tmp_min_2ct = (min_2ct <        EXTADU) ?      0 : min_2ct - EXTADU;
     const int tmp_max_2ct = (max_2ct >= MAXADU - EXTADU) ? MAXADU : max_2ct + 1 + EXTADU;
-    (void)printf("res x %d %d\n", tmp_min_2ct, tmp_max_2ct);
-    (void)printf("res y2 1\nres y3 1\n");
-    (void)printf("res y4 1\nres y5 1\n");
-    (void)printf("res y6 1\nres y7 1\n");
-    (void)printf("res y8 1\nres y9 1\n");
+    (void)fprintf(fd, "res x %d %d\n", tmp_min_2ct, tmp_max_2ct);
+    (void)fprintf(fd, "res y2 1\nres y3 1\n");
+    (void)fprintf(fd, "res y4 1\nres y5 1\n");
+    (void)fprintf(fd, "res y6 1\nres y7 1\n");
+    (void)fprintf(fd, "res y8 1\nres y9 1\n");
 
-    (void)printf("error y sq 2 3 4 5 6 7 8 9\n");
-    (void)printf("log y on\n");
-    (void)printf("plot vert\n");
-    (void)printf("!\n");
-    (void)printf("!  Histogram data follows\n");
-    (void)printf("!\n");
-    (void)printf("!  PHA\tS\tS+\tPv\tPl\tPr\tP+\tL+Q\tO\n");
-    (void)printf("!  TOT\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+    (void)fprintf(fd, "error y sq 2 3 4 5 6 7 8 9\n");
+    (void)fprintf(fd, "log y on\n");
+    (void)fprintf(fd, "plot vert\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  Histogram data follows\n");
+    (void)fprintf(fd, "!\n");
+    (void)fprintf(fd, "!  PHA\tS\tS+\tPv\tPl\tPr\tP+\tL+Q\tO\n");
+    (void)fprintf(fd, "!  TOT\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
                   nsngle,nsplus,npvert,npleft,nprght,npplus,nelnsq,nother);
-    (void)printf("!\n");
+    (void)fprintf(fd, "!\n");
 
     int tmp_min_adu = (min_adu <         EXTADU) ?      0 : min_adu - EXTADU;
     int tmp_max_adu = (max_adu >= MAXADU-EXTADU) ? MAXADU : max_adu + 1 + EXTADU;
     for (int i = tmp_min_adu; i < tmp_max_adu; i++) {
-        (void)printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i,
-                     histo[0][i], histo[1][i], histo[2][i], histo[3][i],
-                     histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
+        (void)fprintf(fd, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", i,
+                      histo[0][i], histo[1][i], histo[2][i], histo[3][i],
+                      histo[4][i], histo[5][i], histo[6][i], histo[7][i]);
     }
 }
