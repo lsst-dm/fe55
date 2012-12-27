@@ -47,19 +47,19 @@ HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
         const short phj = phe[j];
 
         switch (_do_what) {
-          case p_9:
+          case P_9:
             ev->p9 += phj;
             break;
-          case p_1357:
+          case P_1357:
             if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) ev->p9 += phj;
             break;
-          case p_17:
+          case P_17:
             if (j == 1 || j == 7 || j == 4) ev->p9 += phj;
             break;
-          case p_35:
+          case P_35:
             if (j == 3 || j == 5 || j == 4) ev->p9 += phj;
             break;
-          case p_list:
+          case P_LIST:
             break;
         }
 
@@ -142,7 +142,8 @@ main(int argc, char **argv)
 	}
 	if (argc < 3 || argc > 6) { usage(); return 1; }
 
-        HistogramTableXygpx::calctype do_what = ev2pcf ? HistogramTableXygpx::p_list : HistogramTableXygpx::p_9;
+        HistogramTableXygpx::calctype do_what = ev2pcf ?
+            HistogramTableXygpx::P_LIST : HistogramTableXygpx::P_9;
 	if (--argc > 0) {
 	  event = atoi(*++argv);
 	  if (--argc > 0) {
@@ -150,15 +151,15 @@ main(int argc, char **argv)
 	    if (--argc > 0) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-                  do_what=HistogramTableXygpx::p_9;
+                  do_what=HistogramTableXygpx::P_9;
 	      } else if (strcmp(calc,"p17")==0) {
-		  do_what=HistogramTableXygpx::p_17;
+		  do_what=HistogramTableXygpx::P_17;
               } else if (strcmp(calc,"p35")==0) {
-                  do_what=HistogramTableXygpx::p_35;
+                  do_what=HistogramTableXygpx::P_35;
               } else if (strcmp(calc,"p1357")==0) {
-                  do_what=HistogramTableXygpx::p_1357;
+                  do_what=HistogramTableXygpx::P_1357;
               } else if (strcmp(calc,"plist")==0) {
-                  do_what=HistogramTableXygpx::p_list;
+                  do_what=HistogramTableXygpx::P_LIST;
               } else {
                   fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
                   exit(1);
@@ -197,7 +198,7 @@ main(int argc, char **argv)
                     if (ev2pcf) {
                         continue;
                     }
-                    if (do_what == HistogramTableXygpx::p_list) {
+                    if (do_what == HistogramTableXygpx::P_LIST) {
                         fprintf(stdout,"%d %d %d %d p:", ev.x, ev.y, ev.grade, table.sum);
                         for (int i=0;i<9;i++) {
                             fprintf(stdout," %f",ev.data[i]);

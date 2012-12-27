@@ -151,7 +151,7 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     # and Xygpx filter
     #
     reset = 0.0
-    table = ras.HistogramTableXygpx(ras.HistogramTableXygpx.p_9, thresh, split,
+    table = ras.HistogramTableXygpx(ras.HistogramTableXygpx.P_9, thresh, split,
                                     ras.HistogramTableXygpx.T1, reset)
 
     for i, ev in enumerate(events):

@@ -67,14 +67,14 @@ public:
 
 class HistogramTableXygpx : public HistogramTableBase {
 public:
-    enum calctype { p_9,
-                    p_17,
-                    p_35,
-                    p_1357,
-                    p_list,             // for the "total"
+    enum calctype { P_9,
+                    P_17,
+                    P_35,
+                    P_1357,
+                    P_LIST,             // for the "total"
     };
 
-    HistogramTableXygpx(calctype do_what=p_list, int event=0, int split=0,
+    HistogramTableXygpx(calctype do_what=P_LIST, int event=0, int split=0,
                         RESET_STYLES sty=TNONE, double rst=0.0) :
         HistogramTableBase(event, split, sty, rst), _do_what(do_what) {}
 
