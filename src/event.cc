@@ -11,7 +11,8 @@ Event::Event(afw::image::Image<float> const& im,        // image containing even
              lsst::afw::geom::Point2I const& cen,       // central pixel
              int framenum_,                             // frame ID of image
              int chipnum_                               // chip ID for image
-            )
+            ) : grade(UNKNOWN), sum(0.0), p9(0.0)
+
 {
     if (!im.getBBox(afw::image::PARENT).contains(cen - afw::geom::ExtentI(1, 1)) ||
         !im.getBBox(afw::image::PARENT).contains(cen + afw::geom::ExtentI(1, 1))) {

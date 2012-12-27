@@ -1,6 +1,6 @@
 #if !defined(LSST_RASMUSSEN_TABLE_H)
 #define LSST_RASMUSSEN_TABLE_H
-#include "lsst/rasmussen/rv.h"
+#include "lsst/rasmussen/Event.h"
 
 class HistogramTableBase {
 public:
@@ -10,7 +10,7 @@ public:
     HistogramTableBase(int event=0, int split=0,
                        RESET_STYLES sty=TNONE, double rst=0.0, const int filter=0x0);
     virtual ~HistogramTableBase() {}
-    virtual bool process_event(const data_str *ev) { return false; }
+    virtual bool process_event(lsst::rasmussen::Event *ev) { return false; }
 
     void dump_head(FILE *fd=stdout, const char *sfile=NULL, int total=-1);
     void dump_hist(FILE *fd=stdout, const char *sfile=NULL) const;
@@ -23,7 +23,6 @@ public:
     int		min_2ct, max_2ct;
     int		xn, xx, yn, yx;
     // Values set by process_event
-    int grd;                            // the event's grade
     int sum;                            // should be float?  But it's used as an array index
 protected:
     enum { NMAP = 256 };
@@ -36,8 +35,8 @@ protected:
     } table[NMAP];
 
     void applyResetClockCorrection(short phe[9]);
-    bool finishEventProcessing(const data_str *ev, const short phe[9], const int map);
-    int setGrdFromType(const int map);
+    bool finishEventProcessing(lsst::rasmussen::Event *ev, const short phe[9], const int map);
+    lsst::rasmussen::Event::Grade setGrdFromType(const int map);
 
     int histo[8][MAXADU];
     int nacc, nnoto;
@@ -61,7 +60,7 @@ public:
     HistogramTableGflt(const int filter=0x0, int event=0, int split=0,
                        RESET_STYLES sty=TNONE, double rst=0.0) :
         HistogramTableBase(event, split, sty, rst, filter) {}
-    virtual bool process_event(const data_str *ev);
+    virtual bool process_event(lsst::rasmussen::Event *ev);
 };
 
 /*********************************************************************************************************/
@@ -79,7 +78,7 @@ public:
                         RESET_STYLES sty=TNONE, double rst=0.0) :
         HistogramTableBase(event, split, sty, rst), _do_what(do_what) {}
 
-    virtual bool process_event(const data_str *ev);
+    virtual bool process_event(lsst::rasmussen::Event *ev);
 
     // Value set by process_event
     int p9;

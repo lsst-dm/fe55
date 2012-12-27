@@ -28,7 +28,7 @@
  *  Accumulate the num events in the tables
  */
 bool
-HistogramTableGflt::process_event(const data_str *ev
+HistogramTableGflt::process_event(lsst::rasmussen::Event *ev
                                  )
 {
     /*
@@ -37,7 +37,7 @@ HistogramTableGflt::process_event(const data_str *ev
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
     if (ev->data[4] < _event) {
         nbevth++;
-        grd = -1;                       // We don't know map yet. N.b. grd is in HistogramTableBase.
+        ev->grade = lsst::rasmussen::Event::UNKNOWN; // We don't know map yet.
         return false;
     }
 
@@ -90,7 +90,7 @@ HistogramTableGflt::process_event(const data_str *ev
     if (!accept && (_filter & 0x80)) {
         for (int j = 0; j < nnoto; j++) {
             if (map == notomap[j]) {
-                grd = setGrdFromType(map); // n.b. grd is in HistogramTableBase
+                ev->grade = setGrdFromType(map);
                 return false;
             }
         }
@@ -98,7 +98,7 @@ HistogramTableGflt::process_event(const data_str *ev
     }
 
     if (!accept) {
-        grd = setGrdFromType(map);      // n.b. grd is in HistogramTableBase
+        ev->grade = setGrdFromType(map);
         return false;
     }
 
@@ -202,10 +202,12 @@ main(int argc, char **argv)
         data_str eventdata[EVENTS];
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
-            for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.process_event(ev)) {
+            for (data_str *ds = eventdata; ds != eventdata + num; ++ds) {
+                lsst::rasmussen::Event ev(*ds);
+
+                if (table.process_event(&ev)) {
                     if (table.sum >= phlo && table.sum < phhi) {
-                        fwrite(ev, sizeof(data_str), 1, stdout);
+                        fwrite(&ev, sizeof(data_str), 1, stdout); // n.b. slices the Event back to data_str
                     }
                 }
             }

@@ -146,8 +146,7 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
     status = []
     for i, ev in enumerate(events):
         success = table.process_event(ev)
-        grd = table.grd
-        status.append([grd, success])
+        status.append([success,])
     #
     # and Xygpx filter
     #
@@ -156,14 +155,14 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                                     ras.HistogramTableXygpx.T1, reset)
 
     for i, ev in enumerate(events):
-        status[i] += [table.process_event(ev), table.sum, table.p9] if status[i][1] else [None, None, None]
+        status[i] += [table.process_event(ev), table.sum, table.p9] if status[i][0] else [None, None, None]
 
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
-                grd, status1, status2, _sum, p9 = stat
+                status1, status2, _sum, p9 = stat
                 if status2:
-                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, grd, _sum, ev[4], p9)
+                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], p9)
 
     size = 1.6                          # half-size of box to draw
     ctypes = dict(zip(range(-1, 8), (ds9.WHITE,
@@ -173,27 +172,25 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
 
     with ds9.Buffering():
         for ev, st in zip(events, status):
-            grd, successGflt, successXygpx, sumXygpx, p9 = st
+            successGflt, successXygpx, sumXygpx, p9 = st
             success = successXygpx
 
             if not success:
-                if display and (grd == -1 and showUnknown or grd >= 0 and showRejects):
-                    ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ctypes[grd])
+                if display and (ev.grade == -1 and showUnknown or ev.grade >= 0 and showRejects):
+                    ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ctypes[ev.grade])
                     if showGrades:
-                        ds9.dot(str(grd), ev.x + 1.5, ev.y, frame=0, ctype=ctypes[grd])
+                        ds9.dot(str(ev.grade), ev.x + 1.5, ev.y, frame=0, ctype=ctypes[ev.grade])
                     
                 continue
-
-            #assert grd in grades
 
             if display:
                 ds9.line([(ev.x - size, ev.y - size),
                           (ev.x + size, ev.y - size),
                           (ev.x + size, ev.y + size),
                           (ev.x - size, ev.y + size),
-                          (ev.x - size, ev.y - size)], frame=0, ctype=ctypes[grd])
+                          (ev.x - size, ev.y - size)], frame=0, ctype=ctypes[ev.grade])
                 if showGrades:
-                    ds9.dot(str(grd), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[grd])
+                    ds9.dot(str(ev.grade), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[ev.grade])
 
     if outputHistFile:
         with open(outputHistFile, "w") as fd:

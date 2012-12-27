@@ -23,7 +23,7 @@
  *  Accumulate the num events in the tables
  */
 bool
-HistogramTableXygpx::process_event(const data_str *ev
+HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
                                   )
 {
     /*
@@ -191,20 +191,21 @@ main(int argc, char **argv)
 
 	while ((num = fread((void *)eventdata, sizeof(data_str), EVENTS, stdin)) > 0) {
             tot += num;
-            for (data_str *ev = eventdata; ev != eventdata + num; ++ev) {
-                if (table.process_event(ev)) {
+            for (data_str *ds = eventdata; ds != eventdata + num; ++ds) {
+                lsst::rasmussen::Event ev(*ds);
+                if (table.process_event(&ev)) {
                     if (ev2pcf) {
                         continue;
                     }
                     if (do_what == HistogramTableXygpx::p_list) {
-                        fprintf(stdout,"%d %d %d %d p:", ev->x, ev->y, table.grd, table.sum);
+                        fprintf(stdout,"%d %d %d %d p:", ev.x, ev.y, ev.grade, table.sum);
                         for (int i=0;i<9;i++) {
-                            fprintf(stdout," %f",ev->data[i]);
+                            fprintf(stdout," %f",ev.data[i]);
                         }
                         fprintf(stdout,"\n");
                     } else {
-                        fprintf(stdout,"%d %d %d %d %g %d\n",ev->x,ev->y, table.grd, table.sum,
-                                ev->data[4], table.p9);
+                        fprintf(stdout,"%d %d %d %d %g %d\n",ev.x,ev.y, ev.grade, table.sum,
+                                ev.data[4], table.p9);
                     }
                     
                 }

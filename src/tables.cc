@@ -226,7 +226,7 @@ HistogramTableBase::applyResetClockCorrection(short phe[9])
 }
 
 bool
-HistogramTableBase::finishEventProcessing(const data_str *ev,
+HistogramTableBase::finishEventProcessing(lsst::rasmussen::Event *ev,
                                           const short phe[9],
                                           const int map)
 {
@@ -256,36 +256,36 @@ HistogramTableBase::finishEventProcessing(const data_str *ev,
         if (sum < min_2ct) min_2ct = sum;
     }
 
-    grd = setGrdFromType(map);    // n.b. grd is in HistogramTableBase
+    ev->grade = setGrdFromType(map);
 
     return true;
 }
 
 /*********************************************************************************************************/
 
-int
+lsst::rasmussen::Event::Grade
 HistogramTableBase::setGrdFromType(const int map)
 {
     const int *type = table[map].type;
     
     if (type == &nsngle) {
-        return 0;
+        return lsst::rasmussen::Event::SINGLE;
     } else if (type == &nsplus) {
-        return 1;
+        return lsst::rasmussen::Event::SINGLE_P_CORNER;
     } else if (type == &npvert) {
-        return 2;
+        return lsst::rasmussen::Event::VERTICAL_SPLIT;
     } else if (type == &npleft) {
-        return 3;
+        return lsst::rasmussen::Event::LEFT_SPLIT;
     } else if (type == &nprght) {
-        return 4;
+        return lsst::rasmussen::Event::RIGHT_SPLIT;
     } else if (type == &npplus) {
-        return 5;
+        return lsst::rasmussen::Event::SINGLE_SIDED_P_CORNER;
     } else if (type == &nelnsq) {
-        return 6;
+        return lsst::rasmussen::Event::ELL_SQUARE_P_CORNER;
     } else if (type == &nother) {
-        return 7;
+        return lsst::rasmussen::Event::OTHER;
     } else {
-        return -1;
+        return lsst::rasmussen::Event::UNKNOWN;
     }
 }
 
