@@ -30,7 +30,11 @@ HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
      *  Get some gross event parameters
      */
     if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < _event) { nbevth++; return false; }
+    if (ev->data[4] < _event) {
+        nbevth++;
+        ev->grade = lsst::rasmussen::Event::UNKNOWN; // We don't know map yet.
+        return false;
+    }
 
     short phe[9];
     std::copy(ev->data, ev->data + 9, phe);
@@ -79,6 +83,15 @@ HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
           case 8: map |= 0x80;           ; break;
         }
     }
+    ev->grade = setGrdFromType(map);
+    /* 
+     *  grade is identified. check with _filter to see whether  to pass it on or not.
+     */
+    if (ev->grade == lsst::rasmussen::Event::UNKNOWN ||
+        ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
+        return false;
+    }
+
     return finishEventProcessing(ev, phe, map);
 }
 

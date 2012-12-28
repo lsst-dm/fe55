@@ -10,9 +10,16 @@ class HistogramTableBase {
 public:
     static const int MAXADU;
     enum RESET_STYLES { TNONE, T1, T3, T6, };
+    enum calctype { P_9,
+                    P_17,
+                    P_35,
+                    P_1357,
+                    P_LIST,             // for the "total"
+    };
 
     HistogramTableBase(int event=0, int split=0,
-                       RESET_STYLES sty=TNONE, double rst=0.0, const int filter=0x0);
+                       RESET_STYLES sty=TNONE, double rst=0.0, const int filter=~0,
+                       calctype do_what=HistogramTableBase::P_LIST);
     virtual ~HistogramTableBase() {}
     virtual bool process_event(lsst::rasmussen::Event *ev) { return false; }
 
@@ -60,12 +67,10 @@ protected:
     bool finishEventProcessing(lsst::rasmussen::Event *ev, const short phe[9], const int map);
     lsst::rasmussen::Event::Grade setGrdFromType(const int map);
 
-    int nacc, nnoto;
-    unsigned char accmap[NMAP], notomap[NMAP];
-
     int _event;
     int _split;
     const int _filter;
+    const calctype _do_what;
 private:
     enum { NAMLEN = 512 };
 
@@ -78,7 +83,7 @@ private:
 
 class HistogramTableGflt : public HistogramTableBase {
 public:
-    HistogramTableGflt(const int filter=0x0, int event=0, int split=0,
+    HistogramTableGflt(const int filter=~0, int event=0, int split=0,
                        RESET_STYLES sty=TNONE, double rst=0.0) :
         HistogramTableBase(event, split, sty, rst, filter) {}
     virtual bool process_event(lsst::rasmussen::Event *ev);
@@ -88,20 +93,11 @@ public:
 
 class HistogramTableXygpx : public HistogramTableBase {
 public:
-    enum calctype { P_9,
-                    P_17,
-                    P_35,
-                    P_1357,
-                    P_LIST,             // for the "total"
-    };
-
     HistogramTableXygpx(calctype do_what=P_LIST, int event=0, int split=0,
                         RESET_STYLES sty=TNONE, double rst=0.0) :
-        HistogramTableBase(event, split, sty, rst), _do_what(do_what) {}
+        HistogramTableBase(event, split, sty, rst, ~0, do_what) {}
 
     virtual bool process_event(lsst::rasmussen::Event *ev);
-private:
-    const calctype _do_what;
 };
 
 #endif

@@ -23,11 +23,12 @@
  *  which only occurs for the L, Q and Other grades.
  */
 HistogramTableBase::HistogramTableBase(int event, int split,
-                                       RESET_STYLES sty, double rst, const int filter) :
+                                       RESET_STYLES sty, double rst, const int filter,
+                                       calctype do_what) :
 #if USE_NDARRAY
     histo(ndarray::allocate(ndarray::makeVector(8, MAXADU))),
 #endif
-    _event(event), _split(split), _filter(filter), _efile(""), _sty(sty), _rst(rst)
+    _event(event), _split(split), _filter(filter), _do_what(do_what), _efile(""), _sty(sty), _rst(rst)
 {
     static
     const int extra[][4] = {  {4,4,4,4},
@@ -155,55 +156,6 @@ HistogramTableBase::HistogramTableBase(int event, int split,
          }
         */
     }
-    /* make up the array of acceptable maps. */
-
-    for (int i = 0; i < NMAP; i++) accmap[i]=0;
-    nacc=0;
-
-    if (filter & 0x01) {
-        for (int k=0;k<sizeof(sngle);k++) accmap[nacc+k]=sngle[k];
-        nacc+=sizeof(sngle); 
-    }
-    if (filter & 0x02) {
-        for (int k=0;k<sizeof(splus);k++) accmap[nacc+k]=splus[k];
-        nacc+=sizeof(splus); 
-    }
-    if (filter & 0x04) {
-        for (int k=0;k<sizeof(pvert);k++) accmap[nacc+k]=pvert[k];
-        nacc+=sizeof(pvert); 
-    }
-    if (filter & 0x08) {
-        for (int k=0;k<sizeof(pleft);k++) accmap[nacc+k]=pleft[k];
-        nacc+=sizeof(pleft); 
-    }
-    if (filter & 0x10) {
-        for (int k=0;k<sizeof(prght);k++) accmap[nacc+k]=prght[k];
-        nacc+=sizeof(prght); 
-    }
-    if (filter & 0x20) {
-        for (int k=0;k<sizeof(pplus);k++) accmap[nacc+k]=pplus[k];
-        nacc+=sizeof(pplus); 
-    }
-    if (filter & 0x40) {
-        for (int k=0;k<sizeof(elnsq);k++) accmap[nacc+k]=elnsq[k];
-        nacc+=sizeof(elnsq); 
-    }
-    /* need to make a `not others' array. */
-    nnoto=0;
-    for (int k=0;k<sizeof(sngle);k++) notomap[nnoto+k]=sngle[k];
-    nnoto+=sizeof(sngle);
-    for (int k=0;k<sizeof(splus);k++) notomap[nnoto+k]=splus[k];
-    nnoto+=sizeof(splus);
-    for (int k=0;k<sizeof(pvert);k++) notomap[nnoto+k]=pvert[k];
-    nnoto+=sizeof(pvert);
-    for (int k=0;k<sizeof(pleft);k++) notomap[nnoto+k]=pleft[k];
-    nnoto+=sizeof(pleft);
-    for (int k=0;k<sizeof(prght);k++) notomap[nnoto+k]=prght[k];
-    nnoto+=sizeof(prght);
-    for (int k=0;k<sizeof(pplus);k++) notomap[nnoto+k]=pplus[k];
-    nnoto+=sizeof(pplus);
-    for (int k=0;k<sizeof(elnsq);k++) notomap[nnoto+k]=elnsq[k];
-    nnoto+=sizeof(elnsq);
 }
 
 const int HistogramTableBase::MAXADU = 4096;
@@ -260,8 +212,6 @@ HistogramTableBase::finishEventProcessing(lsst::rasmussen::Event *ev,
         if (sum > max_2ct) max_2ct = sum;
         if (sum < min_2ct) min_2ct = sum;
     }
-
-    ev->grade = setGrdFromType(map);
 
     return true;
 }
