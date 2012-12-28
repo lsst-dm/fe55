@@ -93,7 +93,7 @@ def makeAmp(md, emulateMedpict=False):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=None,
+def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=None,
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
                  showRejects=False, showUnknown=False, showGrades=True):
 
@@ -154,7 +154,7 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
             except lsst.pex.exceptions.LsstCppException, e:
                 pass
 
-    print "Found %d events" % (len(events))
+    print "Found  %5d events" % (len(events))
 
     if split is None:
         split = int(0.33*thresh)
@@ -176,7 +176,9 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                                     ras.HistogramTableXygpx.T1, reset)
 
     for i, ev in enumerate(events):
-        status[i] += [table.process_event(ev), table.sum] if status[i][0] else [None, None]
+        status[i] += [table.process_event(ev), table.sum] if status[i][0] else [False, None]
+
+    print "Passed %5d events" % (sum([_[1] for _ in status]))
 
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
@@ -215,39 +217,68 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
             table.dump_hist(fd)
     #table.dump_table()
 
-    if plt:
-        global fig
-        if fig is None:
-            fig = plt.figure()
-        else:
-            fig.clf()
-        axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
-
-        x = np.arange(0, table.MAXADU)
-        for g, label in enumerate(["N(S)",
-                                   "N(S+)",
-                                   "N(Pv)",
-                                   "N(Pl)",
-                                   "N(Pr)",
-                                   "N(P+)",
-                                   "N(L+Q)",
-                                   "N(O)",]):
-            if g in grades:
-                y = table.histo[g]
-
-                
-                axes.step(x, np.where(y > 0, np.log10(y), -1), label="%d %s" % (g, label),
-                         where='mid',
-                         color="black" if ctypes[g] == "white" else ctypes[g])
-
-        axes.set_xlabel("Pulse Height (ADU)")
-        axes.set_ylabel("lg(N)")
-        axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
-        axes.set_ylim(-0.1, axes.get_ylim()[1])
-        axes.legend(loc=1)
-        fig.show()
+    plot_hist(table, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"))
 
     return table, image, events
+
+def plot_hist(table, title=None):
+    if not plt:
+        return
+    
+    global fig
+    if fig is None:
+        fig = plt.figure()
+    else:
+        fig.clf()
+    axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
+
+    x = np.arange(0, table.MAXADU)
+    for g, label in enumerate(["N(S)",
+                               "N(S+)",
+                               "N(Pv)",
+                               "N(Pl)",
+                               "N(Pr)",
+                               "N(P+)",
+                               "N(L+Q)",
+                               "N(O)",]):
+        y = table.histo[g]
+        if sum(y) == 0:
+            continue
+
+        dy = np.sqrt(y)                 # error in y
+        yp = np.log10(y + dy)
+        ym = np.log10(y - dy)
+        y = np.where(y > 0, np.log10(y), -1)
+
+        color="black" if ctypes[g] == "white" else ctypes[g]
+
+        axes.step(x, y, label="%d %s" % (g, label), where='mid', color=color)
+        #
+        # Draw an error band.  The "incomprehensible list comprehensions" flatten the zips:
+        #    [_ for foo in goo for _ in foo]
+        # reads as:
+        #    for foo in goo:
+        #       for _ in foo:
+        #          _
+        # allowing the band to follow the histogram, not its centres; xx = -0.5, 0.5, 0.5, 1.5, 1.5 ...
+        xx =     np.array([_ for xmp in zip(x - 0.5, x + 0.5) for _ in xmp])
+        where =  np.array([_ for _y in y  for _ in (_y, _y)]) > 0
+        ym =     np.array([_ for _y in ym for _ in (_y, _y)])
+        yp =     np.array([_ for _y in yp for _ in (_y, _y)])
+
+        alpha = 0.35
+        axes.fill_between(xx, yp, np.where(np.isfinite(ym), ym, -1), where=where,
+                          color=color, alpha=alpha)
+
+    axes.set_xlabel("Pulse Height (ADU)")
+    axes.set_ylabel("lg(N)")
+    axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
+    axes.set_ylim(-0.1, axes.get_ylim()[1])
+
+    if title:
+        axes.set_title(title)
+    axes.legend(loc=1)
+    fig.show()
 
 def showMedpict(fileName="events.dat", events=None, image=None):
     medpictEvents = ras.readEventFile(fileName)
