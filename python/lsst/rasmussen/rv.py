@@ -95,7 +95,7 @@ def makeAmp(md, emulateMedpict=False):
 
 def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=None,
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
-                 showRejects=False, showUnknown=False, showGrades=True):
+                 showRejects=False, showUnknown=False, showGrades=True, plot=True, subplots=False):
 
     md = dafBase.PropertyList()
     image = afwImage.ImageF(fileName, 1, md)
@@ -217,11 +217,20 @@ def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=Non
             table.dump_hist(fd)
     #table.dump_table()
 
-    plot_hist(table, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"))
+    if plot:
+        plot_hist(table, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"),
+                  subplots=subplots)
 
     return table, image, events
 
-def plot_hist(table, title=None):
+def plot_hist(table, title=None, subplots=False, scaleSubplots=False):
+    """Plot the histograms in a HistogramTable
+
+    \param table The table to plot
+    \param title A title for the plot, if not None
+    \param subplots Make a separate plot for each event grade
+    \param scaleSubplots Scale each subplot separately
+    """
     if not plt:
         return
     
@@ -230,9 +239,19 @@ def plot_hist(table, title=None):
         fig = plt.figure()
     else:
         fig.clf()
-    axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
+    if subplots:
+        plt.subplots_adjust(0.1, 0.1, 0.95, 0.95, wspace=0.0, hspace=0.0)
+    else:
+        axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
+
+    if subplots:
+        nplot = sum([sum(_) != 0 for _ in table.histo])
+    else:
+        nplot = 1
 
     x = np.arange(0, table.MAXADU)
+    i = 0
+    yMax = 0
     for g, label in enumerate(["N(S)",
                                "N(S+)",
                                "N(Pv)",
@@ -246,13 +265,17 @@ def plot_hist(table, title=None):
             continue
 
         dy = np.sqrt(y)                 # error in y
-        yp = np.log10(y + dy)
-        ym = np.log10(y - dy)
-        y = np.where(y > 0, np.log10(y), -1)
 
         color="black" if ctypes[g] == "white" else ctypes[g]
 
-        axes.step(x, y, label="%d %s" % (g, label), where='mid', color=color)
+        i += 1
+        if subplots:
+            axes = fig.add_subplot(nplot, 1, i)
+            
+        axes.set_yscale('log', nonposy='clip')
+
+        lineLabel = "%d %s" % (g, label)
+        axes.step(x, y, label=lineLabel, where='mid', color=color)
         #
         # Draw an error band.  The "incomprehensible list comprehensions" flatten the zips:
         #    [_ for foo in goo for _ in foo]
@@ -262,22 +285,40 @@ def plot_hist(table, title=None):
         #          _
         # allowing the band to follow the histogram, not its centres; xx = -0.5, 0.5, 0.5, 1.5, 1.5 ...
         xx =     np.array([_ for xmp in zip(x - 0.5, x + 0.5) for _ in xmp])
-        where =  np.array([_ for _y in y  for _ in (_y, _y)]) > 0
-        ym =     np.array([_ for _y in ym for _ in (_y, _y)])
-        yp =     np.array([_ for _y in yp for _ in (_y, _y)])
+        ym =     np.array([_ for _y in y - dy for _ in (_y, _y)])
+        yp =     np.array([_ for _y in y + dy for _ in (_y, _y)])
 
         alpha = 0.35
-        axes.fill_between(xx, yp, np.where(np.isfinite(ym), ym, -1), where=where,
-                          color=color, alpha=alpha)
+        axes.fill_between(xx, ym, yp, color=color, alpha=alpha)
 
-    axes.set_xlabel("Pulse Height (ADU)")
-    axes.set_ylabel("lg(N)")
-    axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
-    axes.set_ylim(-0.1, axes.get_ylim()[1])
+        if subplots:
+            if i < nplot:
+                axes.set_xticklabels([])
+            axes.text(0.85, 0.70, lineLabel, ha="left", transform=axes.transAxes)
+        else:
+            axes.set_xlabel("Pulse Height (ADU)")
+
+        axes.set_ylabel("lg(N)")
+        axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
+        ytop = axes.get_ylim()[1]
+        if ytop > yMax:
+            yMax = ytop
+
+    if subplots:
+        if scaleSubplots:
+            yMax = None
+        else:
+            yMax *= 0.99                    # Labels at the top of the y-axis overlap
+        for i in range(nplot):
+            fig.add_subplot(nplot, 1, i + 1).set_ylim(0.8, yMax)
+    else:
+        axes.set_ylim(0.8, yMax)
 
     if title:
-        axes.set_title(title)
-    axes.legend(loc=1)
+        fig.suptitle(title)
+        
+    if not subplots:
+        axes.legend(loc=1)
     fig.show()
 
 def showMedpict(fileName="events.dat", events=None, image=None):
