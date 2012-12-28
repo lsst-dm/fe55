@@ -55,6 +55,18 @@ except ImportError:
 try:
     type(display)
 except NameError:
+    ctypes = dict(zip(range(-1, 8),
+                      (ds9.WHITE,   # UNKNOWN
+                       ds9.RED,     # 0 SINGLE                 Single pixel
+                       ds9.GREEN,   # 1 SINGLE_P_CORNER        Single pixel + corner(s)
+                       ds9.BLUE,    # 2 VERTICAL_SPLIT         Vertical split (+ detached corner(s))
+                       ds9.CYAN,    # 3 LEFT_SPLIT             Left split (+ detached corner(s))
+                       ds9.MAGENTA, # 4 RIGHT_SPLIT            Right split (+ detached corner(s))
+                       ds9.YELLOW,  # 5 SINGLE_SIDED_P_CORNER  Single-sided split + touched corner
+                       ds9.WHITE,   # 6 ELL_SQUARE_P_CORNER    L or square (+ detached corner)
+                       ds9.RED      # 7 OTHER                  all others
+                       )))
+
     display = False
     showMask = False
 
@@ -174,17 +186,6 @@ def processImage(thresh, fileName, grades=range(9), searchThresh=None, split=Non
                     print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], ev.p9)
 
     size = 1.6                          # half-size of box to draw
-    ctypes = dict(zip(range(-1, 8),
-                      (ds9.WHITE,   # UNKNOWN
-                       ds9.RED,     # 0 SINGLE                 Single pixel
-                       ds9.GREEN,   # 1 SINGLE_P_CORNER        Single pixel + corner(s)
-                       ds9.BLUE,    # 2 VERTICAL_SPLIT         Vertical split (+ detached corner(s))
-                       ds9.CYAN,    # 3 LEFT_SPLIT             Left split (+ detached corner(s))
-                       ds9.MAGENTA, # 4 RIGHT_SPLIT            Right split (+ detached corner(s))
-                       ds9.YELLOW,  # 5 SINGLE_SIDED_P_CORNER  Single-sided split + touched corner
-                       ds9.WHITE,   # 6 ELL_SQUARE_P_CORNER    L or square (+ detached corner)
-                       ds9.RED      # 7 OTHER                  all others
-                       )))
 
     with ds9.Buffering():
         for ev, st in zip(events, status):
