@@ -297,22 +297,11 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
 void
 HistogramTable::dump_table() const
 {
-    for (int i = 0, j; i != NMAP; ++i) {
-        if      ( table[i].type == &nsngle ) j = 0;
-	else if ( table[i].type == &nsplus ) j = 1;
-        else if ( table[i].type == &npvert ) j = 2;
-        else if ( table[i].type == &npleft ) j = 3;
-        else if ( table[i].type == &nprght ) j = 4;
-        else if ( table[i].type == &npplus ) j = 5;
-        else if ( table[i].type == &nelnsq ) j = 6;
-        else if ( table[i].type == &nother ) j = 7;
-        else                                 j = 9;
-
-        (void)fprintf(stderr, "%d,", j);
+    for (int i = 0; i != NMAP; ++i) {
+        (void)fprintf(stderr, "%d,", table[i].grade);
         if (i%16 == 15) (void)fprintf(stderr, "\n");
     }
 }
-
 
 /*
  *  Dump the basic calibration file header
