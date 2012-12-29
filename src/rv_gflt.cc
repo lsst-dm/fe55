@@ -24,82 +24,6 @@
 #include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
-/*
- *  Accumulate the num events in the tables
- */
-bool
-HistogramTableGflt::process_event(lsst::rasmussen::Event *ev
-                                 )
-{
-    /*
-     *  Get some gross event parameters
-     */
-    if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < _event) {
-        nbevth++;
-        ev->grade = lsst::rasmussen::Event::UNKNOWN; // We don't know map yet.
-        return false;
-    }
-
-    short phe[9];
-    std::copy(ev->data, ev->data + 9, phe);
-
-    applyResetClockCorrection(phe);
-    /*
-     *  Characterize event & accumulate most of pha
-     */
-    unsigned char map = 0;
-
-    ev->p9 = 0;
-    sum = 0;                            // in HistogramTableBase
-    for (int j = 0; j < 9; j++) {
-        const short phj = phe[j];
-
-        switch (_do_what) {
-          case P_9:
-            ev->p9 += phj;
-            break;
-          case P_1357:
-            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) ev->p9 += phj;
-            break;
-          case P_17:
-            if (j == 1 || j == 7 || j == 4) ev->p9 += phj;
-            break;
-          case P_35:
-            if (j == 3 || j == 5 || j == 4) ev->p9 += phj;
-            break;
-          case P_LIST:
-            break;
-        }
-
-        if (phj < _split && j != 4) {
-            phe[j] = 0;
-            continue;
-        }
-        switch (j) {
-          case 0: map |= 0x01;           ; break;
-          case 1: map |= 0x02; sum += phj; break;
-          case 2: map |= 0x04;           ; break;
-          case 3: map |= 0x08; sum += phj; break;
-          case 4: 	       sum += phj; break;
-          case 5: map |= 0x10; sum += phj; break;
-          case 6: map |= 0x20;           ; break;
-          case 7: map |= 0x40; sum += phj; break;
-          case 8: map |= 0x80;           ; break;
-        }
-    }
-    ev->grade = setGrdFromType(map);
-    /* 
-     *  grade is identified. check with _filter to see whether  to pass it on or not.
-     */
-    if (ev->grade == lsst::rasmussen::Event::UNKNOWN ||
-        ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
-        return false;
-    }
-
-    return finishEventProcessing(ev, phe, map);
-}
-
 #if defined(MAIN)
 /*
  *  Usage complaint message
@@ -134,7 +58,7 @@ main(int argc, char **argv)
 {
 	int	event, split, num, gr, tot = 0;
         int     phlo=0, phhi=-1;
-        HistogramTableGflt::RESET_STYLES style = HistogramTableGflt::TNONE;
+        HistogramTableBase::RESET_STYLES style = HistogramTableBase::TNONE;
 	double	reset=0;
 
 	if (argc<2) {
@@ -187,10 +111,11 @@ main(int argc, char **argv)
 
         /* ready for the data now. */
 
-        HistogramTableGflt table(filter, event, split, style, reset);
+        HistogramTableBase table(event, split, style, reset);
+        table.setFilter(filter);
 
         if (phhi < 0) {
-            phhi = HistogramTableGflt::MAXADU;
+            phhi = HistogramTableBase::MAXADU;
         }
 
         const int EVENTS = 1024;

@@ -21,11 +21,15 @@ public:
                        RESET_STYLES sty=TNONE, double rst=0.0, const int filter=~0,
                        calctype do_what=HistogramTableBase::P_LIST);
     virtual ~HistogramTableBase() {}
-    virtual bool process_event(lsst::rasmussen::Event *ev) { return false; }
+    virtual bool process_event(lsst::rasmussen::Event *ev);
 
     void dump_head(FILE *fd=stdout, const char *sfile=NULL, int total=-1);
     void dump_hist(FILE *fd=stdout, const char *sfile=NULL) const;
     void dump_table() const;
+
+    void setFilter(const int filter) { _filter = filter; }
+    void setCalctype(const calctype do_what) { _do_what = do_what; }
+    void setReset(const RESET_STYLES sty, double rst) { _sty = sty; _rst = rst; }
 
     int		nsngle,nsplus,npvert,npleft,nprght,npplus,
 		nelnsq,nother,ntotal,noobnd,nbevth;
@@ -69,35 +73,14 @@ protected:
 
     int _event;
     int _split;
-    const int _filter;
-    const calctype _do_what;
+    int _filter;
+    calctype _do_what;
 private:
     enum { NAMLEN = 512 };
 
     char _efile[NAMLEN];                // name of the electronics param file, found in the sfile.  Ughh
     RESET_STYLES _sty;
     double _rst;
-};
-
-/********************************************************************************************************/
-
-class HistogramTableGflt : public HistogramTableBase {
-public:
-    HistogramTableGflt(const int filter=~0, int event=0, int split=0,
-                       RESET_STYLES sty=TNONE, double rst=0.0) :
-        HistogramTableBase(event, split, sty, rst, filter) {}
-    virtual bool process_event(lsst::rasmussen::Event *ev);
-};
-
-/*********************************************************************************************************/
-
-class HistogramTableXygpx : public HistogramTableBase {
-public:
-    HistogramTableXygpx(calctype do_what=P_LIST, int event=0, int split=0,
-                        RESET_STYLES sty=TNONE, double rst=0.0) :
-        HistogramTableBase(event, split, sty, rst, ~0, do_what) {}
-
-    virtual bool process_event(lsst::rasmussen::Event *ev);
 };
 
 #endif

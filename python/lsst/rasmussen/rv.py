@@ -159,40 +159,30 @@ def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=Non
     if split is None:
         split = int(0.33*thresh)
     filt = sum([1 << g for g in grades])
-    #
-    # Pass through Gflt filter
-    #
-    table = ras.HistogramTableGflt(filt, thresh, split)
+    reset = 0.0
+    table = ras.HistogramTableBase(thresh, split,
+                                   ras.HistogramTableBase.T1, reset)
+    table.setFilter(filt)
+    table.setCalctype(calcType)
 
     status = []
     for i, ev in enumerate(events):
         success = table.process_event(ev)
-        status.append([success,])
-    #
-    # and Xygpx filter
-    #
-    reset = 0.0
-    table = ras.HistogramTableXygpx(ras.HistogramTableXygpx.P_9, thresh, split,
-                                    ras.HistogramTableXygpx.T1, reset)
-
-    for i, ev in enumerate(events):
-        status[i] += [table.process_event(ev), table.sum] if status[i][0] else [False, None]
-
-    print "Passed %5d events" % (sum([_[1] for _ in status]))
+        status.append([success, table.sum])
+    print "Passed %5d events" % (sum([_[0] for _ in status]))
 
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
-                status1, status2, _sum = stat
-                if status2:
+                stat, _sum = stat
+                if stat:
                     print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], ev.p9)
 
     size = 1.6                          # half-size of box to draw
 
     with ds9.Buffering():
         for ev, st in zip(events, status):
-            successGflt, successXygpx, sumXygpx = st
-            success = successXygpx
+            success, _sum = st
 
             if not success:
                 if display and (ev.grade == -1 and showUnknown or ev.grade >= 0 and showRejects):

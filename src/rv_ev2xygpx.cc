@@ -19,82 +19,6 @@
 #include <algorithm>
 #include "lsst/rasmussen/tables.h"
 
-/*
- *  Accumulate the num events in the tables
- */
-bool
-HistogramTableXygpx::process_event(lsst::rasmussen::Event *ev
-                                  )
-{
-    /*
-     *  Get some gross event parameters
-     */
-    if (ev->data[4] < ev_min) ev_min = ev->data[4];
-    if (ev->data[4] < _event) {
-        nbevth++;
-        ev->grade = lsst::rasmussen::Event::UNKNOWN; // We don't know map yet.
-        return false;
-    }
-
-    short phe[9];
-    std::copy(ev->data, ev->data + 9, phe);
-
-    applyResetClockCorrection(phe);
-    /*
-     *  Characterize event & accumulate most of pha
-     */
-    unsigned char map = 0;
-
-    ev->p9 = 0;
-    sum = 0;                            // in HistogramTableBase
-    for (int j = 0; j < 9; j++) {
-        const short phj = phe[j];
-
-        switch (_do_what) {
-          case P_9:
-            ev->p9 += phj;
-            break;
-          case P_1357:
-            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 4) ev->p9 += phj;
-            break;
-          case P_17:
-            if (j == 1 || j == 7 || j == 4) ev->p9 += phj;
-            break;
-          case P_35:
-            if (j == 3 || j == 5 || j == 4) ev->p9 += phj;
-            break;
-          case P_LIST:
-            break;
-        }
-
-        if (phj < _split && j != 4) {
-            phe[j] = 0;
-            continue;
-        }
-        switch (j) {
-          case 0: map |= 0x01;           ; break;
-          case 1: map |= 0x02; sum += phj; break;
-          case 2: map |= 0x04;           ; break;
-          case 3: map |= 0x08; sum += phj; break;
-          case 4: 	       sum += phj; break;
-          case 5: map |= 0x10; sum += phj; break;
-          case 6: map |= 0x20;           ; break;
-          case 7: map |= 0x40; sum += phj; break;
-          case 8: map |= 0x80;           ; break;
-        }
-    }
-    ev->grade = setGrdFromType(map);
-    /* 
-     *  grade is identified. check with _filter to see whether  to pass it on or not.
-     */
-    if (ev->grade == lsst::rasmussen::Event::UNKNOWN ||
-        ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
-        return false;
-    }
-
-    return finishEventProcessing(ev, phe, map);
-}
-
 #if defined(MAIN)
 /*
  *  Usage complaint message
@@ -142,21 +66,21 @@ main(int argc, char **argv)
     }
 
 	int	event, split, num, tot = 0;
-        HistogramTableXygpx::RESET_STYLES style = HistogramTableXygpx::T1;
+        HistogramTableBase::RESET_STYLES style = HistogramTableBase::T1;
 
 	const char *sfile = "unknown";
 	double	reset = 0;
 	char    *calc;
 
 	if (argc == 1) {	/* for diagnostic purposes */
-            HistogramTableXygpx table;
+            HistogramTableBase table;
             table.dump_table();
             return 0;
 	}
 	if (argc < 3 || argc > 6) { usage(); return 1; }
 
-        HistogramTableXygpx::calctype do_what = ev2pcf ?
-            HistogramTableXygpx::P_LIST : HistogramTableXygpx::P_9;
+        HistogramTableBase::calctype do_what = ev2pcf ?
+            HistogramTableBase::P_LIST : HistogramTableBase::P_9;
 	if (--argc > 0) {
 	  event = atoi(*++argv);
 	  if (--argc > 0) {
@@ -164,15 +88,15 @@ main(int argc, char **argv)
 	    if (--argc > 0) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-                  do_what=HistogramTableXygpx::P_9;
+                  do_what=HistogramTableBase::P_9;
 	      } else if (strcmp(calc,"p17")==0) {
-		  do_what=HistogramTableXygpx::P_17;
+		  do_what=HistogramTableBase::P_17;
               } else if (strcmp(calc,"p35")==0) {
-                  do_what=HistogramTableXygpx::P_35;
+                  do_what=HistogramTableBase::P_35;
               } else if (strcmp(calc,"p1357")==0) {
-                  do_what=HistogramTableXygpx::P_1357;
+                  do_what=HistogramTableBase::P_1357;
               } else if (strcmp(calc,"plist")==0) {
-                  do_what=HistogramTableXygpx::P_LIST;
+                  do_what=HistogramTableBase::P_LIST;
               } else {
                   fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
                   exit(1);
@@ -185,9 +109,9 @@ main(int argc, char **argv)
                       const char *styleStr = *++argv;
                                             
                       switch (*styleStr) {
-                        case '1': style = HistogramTableXygpx::T1; break;
-                        case '3': style = HistogramTableXygpx::T3; break;
-                        case '6': style = HistogramTableXygpx::T6; break;
+                        case '1': style = HistogramTableBase::T1; break;
+                        case '3': style = HistogramTableBase::T3; break;
+                        case '6': style = HistogramTableBase::T6; break;
                         default:
                           fprintf(stderr,"Invalid reset style: %s\n exiting..", styleStr);
                           return 1;
@@ -199,7 +123,9 @@ main(int argc, char **argv)
 	  }
 	}
 
-        HistogramTableXygpx table(do_what, event, split, style, reset);
+        HistogramTableBase table(event, split, style, reset);
+        table.setCalctype(do_what);
+        
         const int EVENTS = 1024;
         data_str eventdata[EVENTS];
 
@@ -211,7 +137,7 @@ main(int argc, char **argv)
                     if (ev2pcf) {
                         continue;
                     }
-                    if (do_what == HistogramTableXygpx::P_LIST) {
+                    if (do_what == HistogramTableBase::P_LIST) {
                         fprintf(stdout,"%d %d %d %d p:", ev.x, ev.y, ev.grade, table.sum);
                         for (int i=0;i<9;i++) {
                             fprintf(stdout," %f",ev.data[i]);

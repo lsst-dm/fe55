@@ -71,7 +71,8 @@ class EventsTestCase(unittest.TestCase):
 
         self.events = [ras.Event(self.image, ev) for ev in self.centers]
 
-        self.table = ras.HistogramTableGflt(200, 0)
+        self.table = ras.HistogramTableBase(0)
+        self.table.setFilter(200)
 
     def tearDown(self):
         del self.image
