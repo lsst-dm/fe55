@@ -68,7 +68,6 @@ protected:
     } table[NMAP];
 
     void applyResetClockCorrection(short phe[9]);
-    bool finishEventProcessing(lsst::rasmussen::Event *ev, const short phe[9], const int map);
     lsst::rasmussen::Event::Grade setGrdFromType(const int map);
 
     int _event;
