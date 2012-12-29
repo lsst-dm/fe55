@@ -167,11 +167,10 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
     if split is None:
         split = int(0.33*thresh)
     filt = sum([1 << g for g in grades])
-    reset = 0.0
-    table = ras.HistogramTable(thresh, split,
-                                   ras.HistogramTable.T1, reset)
+    table = ras.HistogramTable(thresh, split)
     table.setFilter(filt)
     table.setCalctype(calcType)
+    table.setReset(ras.HistogramTable.T1, 0.0)
 
     status = []
     for i, ev in enumerate(events):
