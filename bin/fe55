@@ -7,8 +7,7 @@ parser = argparse.ArgumentParser(description='Process Fe55 events')
 
 parser.add_argument('images', type=str, nargs='+', help='List of files to process')
 parser.add_argument('--grades', type=int, nargs='*', help='Grades to accept', default=range(9))
-parser.add_argument('--calcType', type=str, help='Which "calctype" to use',
-                    default=rv.ras.HistogramTable.P_LIST)
+parser.add_argument('--calcType', type=str, help='Which "calctype" to use', default="P_LIST")
 parser.add_argument('--outputEventsFile', type=str, help='Output file for events')
 parser.add_argument('--outputHistFile', type=str, help='Output file for histogram data')
 parser.add_argument('--displayGrades', action="store_true", help="Label the ds9 points with grades", default=False)
