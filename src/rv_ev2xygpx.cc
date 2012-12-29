@@ -66,21 +66,21 @@ main(int argc, char **argv)
     }
 
 	int	event, split, num, tot = 0;
-        HistogramTableBase::RESET_STYLES style = HistogramTableBase::T1;
+        HistogramTable::RESET_STYLES style = HistogramTable::T1;
 
 	const char *sfile = "unknown";
 	double	reset = 0;
 	char    *calc;
 
 	if (argc == 1) {	/* for diagnostic purposes */
-            HistogramTableBase table;
+            HistogramTable table;
             table.dump_table();
             return 0;
 	}
 	if (argc < 3 || argc > 6) { usage(); return 1; }
 
-        HistogramTableBase::calctype do_what = ev2pcf ?
-            HistogramTableBase::P_LIST : HistogramTableBase::P_9;
+        HistogramTable::calctype do_what = ev2pcf ?
+            HistogramTable::P_LIST : HistogramTable::P_9;
 	if (--argc > 0) {
 	  event = atoi(*++argv);
 	  if (--argc > 0) {
@@ -88,15 +88,15 @@ main(int argc, char **argv)
 	    if (--argc > 0) {
 	      calc=*++argv;
 	      if (strcmp(calc,"p9")==0) {
-                  do_what=HistogramTableBase::P_9;
+                  do_what=HistogramTable::P_9;
 	      } else if (strcmp(calc,"p17")==0) {
-		  do_what=HistogramTableBase::P_17;
+		  do_what=HistogramTable::P_17;
               } else if (strcmp(calc,"p35")==0) {
-                  do_what=HistogramTableBase::P_35;
+                  do_what=HistogramTable::P_35;
               } else if (strcmp(calc,"p1357")==0) {
-                  do_what=HistogramTableBase::P_1357;
+                  do_what=HistogramTable::P_1357;
               } else if (strcmp(calc,"plist")==0) {
-                  do_what=HistogramTableBase::P_LIST;
+                  do_what=HistogramTable::P_LIST;
               } else {
                   fprintf(stderr,"don't recognize this arg: %s\n exiting..",calc);
                   exit(1);
@@ -109,9 +109,9 @@ main(int argc, char **argv)
                       const char *styleStr = *++argv;
                                             
                       switch (*styleStr) {
-                        case '1': style = HistogramTableBase::T1; break;
-                        case '3': style = HistogramTableBase::T3; break;
-                        case '6': style = HistogramTableBase::T6; break;
+                        case '1': style = HistogramTable::T1; break;
+                        case '3': style = HistogramTable::T3; break;
+                        case '6': style = HistogramTable::T6; break;
                         default:
                           fprintf(stderr,"Invalid reset style: %s\n exiting..", styleStr);
                           return 1;
@@ -123,7 +123,7 @@ main(int argc, char **argv)
 	  }
 	}
 
-        HistogramTableBase table(event, split, style, reset);
+        HistogramTable table(event, split, style, reset);
         table.setCalctype(do_what);
         
         const int EVENTS = 1024;
@@ -137,7 +137,7 @@ main(int argc, char **argv)
                     if (ev2pcf) {
                         continue;
                     }
-                    if (do_what == HistogramTableBase::P_LIST) {
+                    if (do_what == HistogramTable::P_LIST) {
                         fprintf(stdout,"%d %d %d %d p:", ev.x, ev.y, ev.grade, table.sum);
                         for (int i=0;i<9;i++) {
                             fprintf(stdout," %f",ev.data[i]);

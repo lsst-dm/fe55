@@ -93,7 +93,7 @@ def makeAmp(md, emulateMedpict=False):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=None,
-                 calcType=ras.HistogramTableBase.P_9,
+                 calcType=ras.HistogramTable.P_9,
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
                  displayRejects=False, displayUnknown=False, displayGrades=True,
                  display=False, plot=True, subplots=False):
@@ -168,8 +168,8 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
         split = int(0.33*thresh)
     filt = sum([1 << g for g in grades])
     reset = 0.0
-    table = ras.HistogramTableBase(thresh, split,
-                                   ras.HistogramTableBase.T1, reset)
+    table = ras.HistogramTable(thresh, split,
+                                   ras.HistogramTable.T1, reset)
     table.setFilter(filt)
     table.setCalctype(calcType)
 
@@ -372,11 +372,11 @@ def showMedpict(fileName="events.dat", events=None, image=None):
 
 
 def calcTypeFromString(string):
-    P_names =  [_ for _ in dir(ras.HistogramTableBase) if _.startswith("P_")]
+    P_names =  [_ for _ in dir(ras.HistogramTable) if _.startswith("P_")]
     if string not in P_names:
         raise RuntimeError("Name %s is not in [%s]" % (string, ", ".join(P_names)))
 
-    return eval("ras.HistogramTableBase.%s" % string)
+    return eval("ras.HistogramTable.%s" % string)
                         
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

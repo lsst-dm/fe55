@@ -6,7 +6,7 @@
 /**
  * \brief Hello World
  */
-class HistogramTableBase {
+class HistogramTable {
 public:
     static const int MAXADU;
     enum RESET_STYLES { TNONE, T1, T3, T6, };
@@ -17,10 +17,10 @@ public:
                     P_LIST,             // for the "total"
     };
 
-    HistogramTableBase(int event=0, int split=0,
+    HistogramTable(int event=0, int split=0,
                        RESET_STYLES sty=TNONE, double rst=0.0, const int filter=~0,
-                       calctype do_what=HistogramTableBase::P_LIST);
-    virtual ~HistogramTableBase() {}
+                       calctype do_what=HistogramTable::P_LIST);
+    virtual ~HistogramTable() {}
     virtual bool process_event(lsst::rasmussen::Event *ev);
 
     void dump_head(FILE *fd=stdout, const char *sfile=NULL, int total=-1);

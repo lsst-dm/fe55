@@ -58,7 +58,7 @@ main(int argc, char **argv)
 {
 	int	event, split, num, gr, tot = 0;
         int     phlo=0, phhi=-1;
-        HistogramTableBase::RESET_STYLES style = HistogramTableBase::TNONE;
+        HistogramTable::RESET_STYLES style = HistogramTable::TNONE;
 	double	reset=0;
 
 	if (argc<2) {
@@ -111,11 +111,11 @@ main(int argc, char **argv)
 
         /* ready for the data now. */
 
-        HistogramTableBase table(event, split, style, reset);
+        HistogramTable table(event, split, style, reset);
         table.setFilter(filter);
 
         if (phhi < 0) {
-            phhi = HistogramTableBase::MAXADU;
+            phhi = HistogramTable::MAXADU;
         }
 
         const int EVENTS = 1024;

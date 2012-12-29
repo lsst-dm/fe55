@@ -22,7 +22,7 @@
  *  and which extra pixels should be included in the summed pha,
  *  which only occurs for the L, Q and Other grades.
  */
-HistogramTableBase::HistogramTableBase(int event, int split,
+HistogramTable::HistogramTable(int event, int split,
                                        RESET_STYLES sty, double rst, const int filter,
                                        calctype do_what) :
 #if USE_NDARRAY
@@ -158,13 +158,13 @@ HistogramTableBase::HistogramTableBase(int event, int split,
     }
 }
 
-const int HistogramTableBase::MAXADU = 4096;
+const int HistogramTable::MAXADU = 4096;
 
 /*
  *  Insert the reset clock correction
  */
 void
-HistogramTableBase::applyResetClockCorrection(short phe[9])
+HistogramTable::applyResetClockCorrection(short phe[9])
 {
     switch (_sty) {
       case T6:
@@ -183,7 +183,7 @@ HistogramTableBase::applyResetClockCorrection(short phe[9])
 }
 
 bool
-HistogramTableBase::finishEventProcessing(lsst::rasmussen::Event *ev,
+HistogramTable::finishEventProcessing(lsst::rasmussen::Event *ev,
                                           const short phe[9],
                                           const int map)
 {
@@ -219,7 +219,7 @@ HistogramTableBase::finishEventProcessing(lsst::rasmussen::Event *ev,
 /*********************************************************************************************************/
 
 lsst::rasmussen::Event::Grade
-HistogramTableBase::setGrdFromType(const int map)
+HistogramTable::setGrdFromType(const int map)
 {
     const int *type = table[map].type;
     
@@ -248,7 +248,7 @@ HistogramTableBase::setGrdFromType(const int map)
  *  Accumulate the num events in the tables
  */
 bool
-HistogramTableBase::process_event(lsst::rasmussen::Event *ev
+HistogramTable::process_event(lsst::rasmussen::Event *ev
                                  )
 {
     /*
@@ -271,7 +271,7 @@ HistogramTableBase::process_event(lsst::rasmussen::Event *ev
     unsigned char map = 0;
 
     ev->p9 = 0;
-    sum = 0;                            // in HistogramTableBase
+    sum = 0;                            // in HistogramTable
     for (int j = 0; j < 9; j++) {
         const short phj = phe[j];
 
@@ -324,7 +324,7 @@ HistogramTableBase::process_event(lsst::rasmussen::Event *ev
  *  For diagnostic purposes, dump the grade table in CLASSIFY format.
  */
 void
-HistogramTableBase::dump_table() const
+HistogramTable::dump_table() const
 {
     for (int i = 0, j; i != NMAP; ++i) {
         if      ( table[i].type == &nsngle ) j = 0;
@@ -347,7 +347,7 @@ HistogramTableBase::dump_table() const
  *  Dump the basic calibration file header
  */
 void
-HistogramTableBase::dump_head(FILE *fd,
+HistogramTable::dump_head(FILE *fd,
                               const char *sfile, int total)
 {
     char	line[NAMLEN], *c;
@@ -414,7 +414,7 @@ HistogramTableBase::dump_head(FILE *fd,
  *  Dump the QDP header histogram table
  */
 void
-HistogramTableBase::dump_hist(FILE *fd,
+HistogramTable::dump_hist(FILE *fd,
                               const char *sfile) const
 {
     (void)fprintf(fd, "!\n");
