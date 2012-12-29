@@ -77,6 +77,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the sngle events into table GRADE 0 */
     for (int i = 0; i < sizeof(sngle); i++) {
         look_up *t = table + sngle[i];
+        t->grade = lsst::rasmussen::Event::SINGLE;
         t->type = &nsngle;
         t->hist = histo[0];
         t->extr = extra[0];	
@@ -85,6 +86,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the splus events into table GRADE 1 */
     for (int i = 0; i < sizeof(splus); i++) {
         look_up *t = table + splus[i];
+        t->grade = lsst::rasmussen::Event::SINGLE_P_CORNER;
         t->type = &nsplus;
         t->hist = histo[1];
         t->extr = extra[0];	
@@ -93,6 +95,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the pvert events into table GRADE 2 */
     for (int i = 0; i < sizeof(pvert); i++) {
         look_up *t = table + pvert[i];
+        t->grade = lsst::rasmussen::Event::VERTICAL_SPLIT;
         t->type = &npvert;
         t->hist = histo[2];
         t->extr = extra[0];	
@@ -101,6 +104,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the pleft events into table GRADE 3 */
     for (int i = 0; i < sizeof(pleft); i++) {
         look_up *t = table + pleft[i];
+        t->grade = lsst::rasmussen::Event::LEFT_SPLIT;
         t->type = &npleft;
         t->hist = histo[3];
         t->extr = extra[0];	
@@ -109,6 +113,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the prght events into table GRADE 4 */
     for (int i = 0; i < sizeof(prght); i++) {
         look_up *t = table + prght[i];
+        t->grade = lsst::rasmussen::Event::RIGHT_SPLIT;
         t->type = &nprght;
         t->hist = histo[4];
         t->extr = extra[0];	
@@ -117,6 +122,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the pplus events into table GRADE 5 */
     for (int i = 0; i < sizeof(pplus); i++) {
         look_up *t = table + pplus[i];
+        t->grade = lsst::rasmussen::Event::SINGLE_SIDED_P_CORNER;
         t->type = &npplus;
         t->hist = histo[5];
         t->extr = extra[0];	
@@ -125,6 +131,7 @@ HistogramTable::HistogramTable(int event, int split,
     /* load the elnsq events into table GRADE 6 */
     for (int i = 0; i < sizeof(elnsq); i++) {
         look_up *t = table + elnsq[i];
+        t->grade = lsst::rasmussen::Event::ELL_SQUARE_P_CORNER;
         t->type = &nelnsq;
         t->hist = histo[6];
         t->extr = extra[0];	
@@ -139,6 +146,7 @@ HistogramTable::HistogramTable(int event, int split,
     for (int i = 0; i < NMAP; i++) {
         look_up *t = table + i;
         if (t->type) continue;		/* already loaded */
+        t->grade = lsst::rasmussen::Event::OTHER;
         t->type = &nother;
         t->hist = histo[7];
         t->extr = extra[0];	
@@ -181,33 +189,6 @@ HistogramTable::applyResetClockCorrection(short phe[9])
 }
 
 /*********************************************************************************************************/
-
-lsst::rasmussen::Event::Grade
-HistogramTable::setGrdFromType(const int map)
-{
-    const int *type = table[map].type;
-    
-    if (type == &nsngle) {
-        return lsst::rasmussen::Event::SINGLE;
-    } else if (type == &nsplus) {
-        return lsst::rasmussen::Event::SINGLE_P_CORNER;
-    } else if (type == &npvert) {
-        return lsst::rasmussen::Event::VERTICAL_SPLIT;
-    } else if (type == &npleft) {
-        return lsst::rasmussen::Event::LEFT_SPLIT;
-    } else if (type == &nprght) {
-        return lsst::rasmussen::Event::RIGHT_SPLIT;
-    } else if (type == &npplus) {
-        return lsst::rasmussen::Event::SINGLE_SIDED_P_CORNER;
-    } else if (type == &nelnsq) {
-        return lsst::rasmussen::Event::ELL_SQUARE_P_CORNER;
-    } else if (type == &nother) {
-        return lsst::rasmussen::Event::OTHER;
-    } else {
-        return lsst::rasmussen::Event::UNKNOWN;
-    }
-}
-
 /*
  *  Accumulate the num events in the tables
  */
@@ -272,7 +253,7 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
           case 8: map |= 0x80;           ; break;
         }
     }
-    ev->grade = setGrdFromType(map);
+    ev->grade = table[map].grade;
     /* 
      *  grade is identified. check with _filter to see whether  to pass it on or not.
      */

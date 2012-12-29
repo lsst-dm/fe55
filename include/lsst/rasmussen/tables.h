@@ -45,15 +45,15 @@ public:
 protected:
     enum { NMAP = 256 };
     struct look_up {
-        look_up() : type(0), extr(0), hist() {}
+        look_up() : grade(lsst::rasmussen::Event::UNKNOWN), type(0), extr(0), hist() {}
 
+        lsst::rasmussen::Event::Grade grade;
         int *type;
         const int *extr;
         ndarray::Array<int, 1, 1> hist;
     } table[NMAP];
 
     void applyResetClockCorrection(short phe[9]);
-    lsst::rasmussen::Event::Grade setGrdFromType(const int map);
 
     int _event;
     int _split;
