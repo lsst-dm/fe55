@@ -2,41 +2,13 @@
 #
 # See if we still get the same results as the old C code used to
 #
-tmpfile="${TEMPDIR:-/tmp}/$(whoami)-$$"
-trap "rm -f $tmpfile" 0
-result=true
+histfile="${TEMPDIR:-/tmp}/hist-$(whoami)-$$"
+eventsfile="${TEMPDIR:-/tmp}/events-$(whoami)-$$"
+trap "rm -f $histfile $eventsfile" 0
 
-function myTest()
-{
-   testName=$1; shift
-   if [ X$1 = X"--ev2pcf" ]; then
-       testBasename="rv_ev2pcf"
-   else
-       testBasename=$(basename $testName)
-   fi
-   truth=$RASMUSSEN_DIR/tests/$testBasename.out
-
-   medpict_lsst -b -f e -c -e \
-	     ~/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz 2> /dev/null |
-   $RASMUSSEN_DIR/src/rv_gflt 30 10 -g 0 2 3 4 6 |
-   $testName $@ > $tmpfile
-
-if cmp $tmpfile $truth > /dev/null 2>&1; then
-   echo Pass $testBasename >&2
-else
-   result=false
-
-   echo Fail $testBasename >&2
-   wc -l $tmpfile $truth | head -2
-   if True; then
-       diff $tmpfile $truth | head -10 >&2
-   else
-       diff $tmpfile $truth >&2
-   fi
-fi
-}
-
-myTest $RASMUSSEN_DIR/src/rv_ev2xygpx 30 10 p9 
-myTest $RASMUSSEN_DIR/src/rv_ev2xygpx --ev2pcf 30 10
-
-$result
+$RASMUSSEN_DIR/bin/fe55 --medpict \
+    /Users/rhl/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz \
+    --thresh 30 --split 10 --grades 0 2 3 4 6 --outputHist $histfile --outputEvent $eventsfile --calc P_9 &&
+diff $eventsfile $RASMUSSEN_DIR/tests/rv_ev2xygpx.out &&
+diff $histfile $RASMUSSEN_DIR/tests/rv_ev2pcf.out &&
+echo Passed
