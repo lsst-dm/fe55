@@ -39,9 +39,6 @@ public:
     int		xn, xx, yn, yx;
 
     ndarray::Array<int, 2, 2> histo;
-
-    // Values set by process_event
-    int sum;                            // should be float?  But it's used as an array index
 protected:
     enum { NMAP = 256 };
     struct look_up {

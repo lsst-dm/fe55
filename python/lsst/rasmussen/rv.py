@@ -172,25 +172,19 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
     table.setCalctype(calcType)
     table.setReset(ras.HistogramTable.T1, 0.0)
 
-    status = []
-    for i, ev in enumerate(events):
-        success = table.process_event(ev)
-        status.append([success, table.sum])
-    print "Passed %5d events" % (sum([_[0] for _ in status]))
+    status = [table.process_event(ev) for ev in events] # actually process Events
+    print "Passed %5d events" % (sum(status))
 
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
-                stat, _sum = stat
                 if stat:
-                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], ev.p9)
+                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, ev.sum, ev[4], ev.p9)
 
     size = 1.6                          # half-size of box to draw
 
     with ds9.Buffering():
-        for ev, st in zip(events, status):
-            success, _sum = st
-
+        for ev, success in zip(events, status):
             if not success:
                 if display and (ev.grade == -1 and displayUnknown or ev.grade >= 0 and displayRejects):
                     ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ctypes[ev.grade])
@@ -210,7 +204,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
 
     if outputHistFile:
         with open(outputHistFile, "w") as fd:
-            table.dump_head(fd, "unknown", sum([_[0] for _ in status]))
+            table.dump_head(fd, "unknown", sum(status))
             table.dump_hist(fd)
     #table.dump_table()
 
@@ -420,24 +414,20 @@ def simpleProcessImage(thresh, fileNames, grades=range(8), searchThresh=None, sp
     table.setCalctype(calcType)
     table.setReset(ras.HistogramTable.T1, 0.0)
     # Process the events
-    status = []
-    for i, ev in enumerate(events):
-        success = table.process_event(ev)
-        status.append([success, table.sum])
-    print "Passed %5d events" % (sum([_[0] for _ in status]))
+    status = [table.process_event(ev) for ev in events]
+    print "Passed %5d events" % (sum(status))
     #
     # Done.  Output...
     #
     if outputEventsFile:
         with open(outputEventsFile, "w") as fd:
             for stat, ev in zip(status, events):
-                stat, _sum = stat
                 if stat:
-                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, _sum, ev[4], ev.p9)
+                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, ev.sum, ev[4], ev.p9)
 
     if outputHistFile:
         with open(outputHistFile, "w") as fd:
-            table.dump_head(fd, "unknown", sum([_[0] for _ in status]))
+            table.dump_head(fd, "unknown", sum(status))
             table.dump_hist(fd)
     #table.dump_table()
 

@@ -216,7 +216,7 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
     unsigned char map = 0;
 
     ev->p9 = 0;
-    sum = 0;                            // in HistogramTable
+    ev->sum = 0;
     for (int j = 0; j < 9; j++) {
         const short phj = phe[j];
 
@@ -242,15 +242,15 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
             continue;
         }
         switch (j) {
-          case 0: map |= 0x01;           ; break;
-          case 1: map |= 0x02; sum += phj; break;
-          case 2: map |= 0x04;           ; break;
-          case 3: map |= 0x08; sum += phj; break;
-          case 4: 	       sum += phj; break;
-          case 5: map |= 0x10; sum += phj; break;
-          case 6: map |= 0x20;           ; break;
-          case 7: map |= 0x40; sum += phj; break;
-          case 8: map |= 0x80;           ; break;
+          case 0: map |= 0x01;               ; break;
+          case 1: map |= 0x02; ev->sum += phj; break;
+          case 2: map |= 0x04;               ; break;
+          case 3: map |= 0x08; ev->sum += phj; break;
+          case 4: 	       ev->sum += phj; break;
+          case 5: map |= 0x10; ev->sum += phj; break;
+          case 6: map |= 0x20;               ; break;
+          case 7: map |= 0x40; ev->sum += phj; break;
+          case 8: map |= 0x80;               ; break;
         }
     }
     ev->grade = table[map].grade;
@@ -267,13 +267,13 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
      */
     look_up *const ent = &table[map];
     const int *xtr = ent->extr;
-    for (int j = 0; xtr[j] != 4 && j < 4; j++) sum += phe[xtr[j]];
+    for (int j = 0; xtr[j] != 4 && j < 4; j++) ev->sum += phe[xtr[j]];
     /*
      *  Accumulate statistics and various bounds
      */
-    if (sum >= MAXADU) { noobnd++;  return false; }
-    if (sum > max_adu) max_adu = sum;
-    if (sum < min_adu) min_adu = sum;
+    if (ev->sum >= MAXADU) { noobnd++;  return false; }
+    if (ev->sum > max_adu) max_adu = ev->sum;
+    if (ev->sum < min_adu) min_adu = ev->sum;
     if (ev->x < xn) xn = ev->x;
     if (ev->x > xx) xx = ev->x;
     if (ev->y < yn) yn = ev->y;
@@ -282,10 +282,10 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
     yav += ev->y;
     ntotal += 1;
     *ent->type += 1;
-    const int hsum = ent->hist[sum] += 1;
+    const int hsum = ent->hist[static_cast<int>(ev->sum)]++;
     if (hsum > 2) {
-        if (sum > max_2ct) max_2ct = sum;
-        if (sum < min_2ct) min_2ct = sum;
+        if (ev->sum > max_2ct) max_2ct = ev->sum;
+        if (ev->sum < min_2ct) min_2ct = ev->sum;
     }
 
     return true;
