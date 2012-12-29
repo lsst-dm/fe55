@@ -8,10 +8,10 @@
 !  Total_events = 1249
 !  Total_pixels = 1987006
 !
-!  Events_below = 0
+!  Events_below = 5703
 !  Events_above = 0
 !  Events_input = 1249
-!  PH4_minimum  = 30
+!  PH4_minimum  = 20
 !  PHS_minimum  = 30
 !  PHS_Maximum  = 795
 !  X_Minimum    = 8
