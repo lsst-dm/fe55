@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import argparse
+import lsst.rasmussen.rv as rv
+
+parser = argparse.ArgumentParser(description='Process Fe55 events')
+
+parser.add_argument('images', type=str, nargs='+', help='List of files to process')
+parser.add_argument('--grades', type=int, nargs='*', help='Grades to accept', default=range(9))
+parser.add_argument('--calcType', type=str, help='Which "calctype" to use',
+                    default=rv.ras.HistogramTableBase.P_LIST)
+parser.add_argument('--outputEventsFile', type=str, help='Output file for events')
+parser.add_argument('--outputHistFile', type=str, help='Output file for histogram data')
+parser.add_argument('--displayGrades', action="store_true", help="Label the ds9 points with grades", default=False)
+parser.add_argument('--displayRejects', action="store_true", help="Display rejected events", default=False)
+parser.add_argument('--displayUnknown', action="store_true", help="Display rejected events", default=False)
+
+parser.add_argument('--ds9', action="store_true", help="Make ds9 plots", default=False)
+parser.add_argument('--plot', action="store_true", help="Make histogram plots", default=False)
+parser.add_argument('--subplots', action="store_true",
+                    help="Make histogram plots as a set of panels", default=False)
+parser.add_argument('--medpict', action="store_true", help="Emulate medpict's behaviour", default=False)
+parser.add_argument('--searchThreshold', type=int, help='Threshold for object finder', default=20)
+parser.add_argument('--split', type=int, help='Threshold for secondary pixels ("split")', default=20)
+parser.add_argument('--threshold', type=int, help='Threshold for events ("event")', default=30)
+
+args = parser.parse_args()
+
+rv.processImage(searchThresh=args.searchThreshold, thresh=args.threshold, split=args.split,
+                fileNames=args.images, grades=args.grades, emulateMedpict=args.medpict,
+                calcType=rv.calcTypeFromString(args.calcType),
+                outputEventsFile=args.outputEventsFile, outputHistFile=args.outputHistFile,
+                display=args.ds9, displayGrades=args.displayGrades,
+                displayRejects=args.displayRejects, displayUnknown=args.displayUnknown,
+                plot=args.plot, subplots=args.subplots,
+                )
+
+if args.plot:
+    raw_input("Hit any key to exit ")

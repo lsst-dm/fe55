@@ -53,7 +53,7 @@ except ImportError:
     plt = None
 
 try:
-    type(display)
+    type(ctypes)
 except NameError:
     ctypes = dict(zip(range(-1, 8),
                       (ds9.WHITE,   # UNKNOWN
@@ -67,8 +67,7 @@ except NameError:
                        ds9.RED      # 7 OTHER                  all others
                        )))
 
-    display = False
-    showMask = False
+    displayMask = False
 
 def makeAmp(md, emulateMedpict=False):
     startData      = 0    if emulateMedpict else 50
@@ -93,66 +92,75 @@ def makeAmp(md, emulateMedpict=False):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=None,
+def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=None,
+                 calcType=ras.HistogramTableBase.P_9,
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
-                 showRejects=False, showUnknown=False, showGrades=True, plot=True, subplots=False):
-
-    md = dafBase.PropertyList()
-    image = afwImage.ImageF(fileName, 1, md)
-    amp = makeAmp(md)
-
-    bias = image.Factory(image, amp.getBiasSec())
-
-    if emulateMedpict:
-        image -= afwMath.makeStatistics(image, afwMath.MEDIAN).getValue()
-        bias.set(0)
-    else:
-        image -= afwMath.makeStatistics(bias, afwMath.MEDIAN).getValue()
-
-    if searchThresh is None:
-        searchThresh = thresh
-
-    dataSec = image.Factory(image, amp.getDataSec())
-    fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
-
-    if display:
-        if showMask:
-            mi = afwImage.makeMaskedImage(image)
-            afwDetect.setMaskFromFootprintList(mi.getMask(), fs.getFootprints(), 0x4)
-        else:
-            mi = image
-        ds9.mtv(mi, title="bkgd subtracted", frame=0)
+                 displayRejects=False, displayUnknown=False, displayGrades=True,
+                 display=False, plot=True, subplots=False):
 
     events = []
-    for foot in fs.getFootprints():
-        for i, peak in enumerate(foot.getPeaks()):
-            x, y = peak.getIx(), peak.getIy()
-            #
-            # medpict fails to find some events with two identical adjacent peak values,
-            # in particular it uses th peak criterion embodied in the following logic
-            #
-            # If you set emulateMedpict == False and run showMedpict(dmEvents)
-            # you'll see the real events it missed
-            #
-            if emulateMedpict:
-                v00 = image.get(x, y)
+    for fileName in fileNames:
+        md = dafBase.PropertyList()
+        image = afwImage.ImageF(fileName, 1, md)
+        amp = makeAmp(md, emulateMedpict)
+
+        bias = image.Factory(image, amp.getBiasSec())
+
+        if emulateMedpict:
+            image -= afwMath.makeStatistics(image, afwMath.MEDIAN).getValue()
+            bias.set(0)
+        else:
+            image -= afwMath.makeStatistics(bias, afwMath.MEDIAN).getValue()
+
+        if searchThresh is None:
+            searchThresh = thresh
+
+        dataSec = image.Factory(image, amp.getDataSec())
+        fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
+
+        if display:
+            if displayMask:
+                mi = afwImage.makeMaskedImage(image)
+                afwDetect.setMaskFromFootprintList(mi.getMask(), fs.getFootprints(), 0x4)
+            else:
+                mi = image
+            ds9.mtv(mi, title="bkgd subtracted", frame=0)
+
+        for foot in fs.getFootprints():
+            for i, peak in enumerate(foot.getPeaks()):
+                x, y = peak.getIx(), peak.getIy()
+                #
+                # medpict fails to find some events with two identical adjacent peak values,
+                # in particular it uses th peak criterion embodied in the following logic
+                #
+                # If you set emulateMedpict == False and run showMedpict(dmEvents)
+                # you'll see the real events it missed
+                #
+                if emulateMedpict:
+                    v00 = image.get(x, y)
+                    try:
+                        if not (v00 >  image.get(x - 1, y - 1) and
+                                v00 >  image.get(x    , y - 1) and
+                                v00 >  image.get(x + 1, y - 1) and
+                                v00 >  image.get(x - 1, y    ) and
+                                v00 >= image.get(x + 1, y    ) and
+                                v00 >= image.get(x - 1, y + 1) and
+                                v00 >= image.get(x    , y + 1) and
+                                v00 >= image.get(x + 1, y + 1)):
+                            continue
+                    except lsst.pex.exceptions.LsstCppException, e:
+                        pass
+
                 try:
-                    if not (v00 >  image.get(x - 1, y - 1) and
-                            v00 >  image.get(x    , y - 1) and
-                            v00 >  image.get(x + 1, y - 1) and
-                            v00 >  image.get(x - 1, y    ) and
-                            v00 >= image.get(x + 1, y    ) and
-                            v00 >= image.get(x - 1, y + 1) and
-                            v00 >= image.get(x    , y + 1) and
-                            v00 >= image.get(x + 1, y + 1)):
-                        continue
+                    events.append(ras.Event(image, afwGeom.PointI(x, y)))
                 except lsst.pex.exceptions.LsstCppException, e:
                     pass
 
-            try:
-                events.append(ras.Event(image, afwGeom.PointI(x, y)))
-            except lsst.pex.exceptions.LsstCppException, e:
-                pass
+    if emulateMedpict:
+        def cmpEvents(a, b):
+            c = cmp(a.y, b.y)
+            return cmp(a.x, b.x) if c == 0 else c
+        events = sorted(events, cmpEvents, reverse=True)
 
     print "Found  %5d events" % (len(events))
 
@@ -185,9 +193,9 @@ def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=Non
             success, _sum = st
 
             if not success:
-                if display and (ev.grade == -1 and showUnknown or ev.grade >= 0 and showRejects):
+                if display and (ev.grade == -1 and displayUnknown or ev.grade >= 0 and displayRejects):
                     ds9.dot("+", ev.x, ev.y, size=0.5, ctype=ctypes[ev.grade])
-                    if showGrades:
+                    if displayGrades:
                         ds9.dot(str(ev.grade), ev.x + 1.5, ev.y, frame=0, ctype=ctypes[ev.grade])
                     
                 continue
@@ -198,12 +206,12 @@ def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=Non
                           (ev.x + size, ev.y + size),
                           (ev.x - size, ev.y + size),
                           (ev.x - size, ev.y - size)], frame=0, ctype=ctypes[ev.grade])
-                if showGrades:
+                if displayGrades:
                     ds9.dot(str(ev.grade), ev.x + size + 1, ev.y - size, frame=0, ctype=ctypes[ev.grade])
 
     if outputHistFile:
         with open(outputHistFile, "w") as fd:
-            table.dump_head(fd)
+            table.dump_head(fd, "unknown", sum([_[0] for _ in status]))
             table.dump_hist(fd)
     #table.dump_table()
 
@@ -362,6 +370,14 @@ def showMedpict(fileName="events.dat", events=None, image=None):
                         ds9.flush()
                         import pdb; pdb.set_trace() 
 
+
+def calcTypeFromString(string):
+    P_names =  [_ for _ in dir(ras.HistogramTableBase) if _.startswith("P_")]
+    if string not in P_names:
+        raise RuntimeError("Name %s is not in [%s]" % (string, ", ".join(P_names)))
+
+    return eval("ras.HistogramTableBase.%s" % string)
+                        
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 searchThresh=20
@@ -369,6 +385,4 @@ thresh=30
 fileName="/Users/rhl/TeX/Talks/LSST/Camera-2012/HandsOn/Fe55/Data/C0_20090717-214738-141.fits.gz"
 
 if __name__ == "__main__":
-    processImage(searchThresh=searchThresh, thresh=thresh, fileName=fileName)
-
-    
+    processImage(searchThresh=searchThresh, thresh=thresh, fileName=[fileName])
