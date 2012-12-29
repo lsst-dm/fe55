@@ -38,33 +38,18 @@ public:
     int		min_2ct, max_2ct;
     int		xn, xx, yn, yx;
 
-#define USE_NDARRAY 1
-#if USE_NDARRAY
     ndarray::Array<int, 2, 2> histo;
-#else
-    int histo[8][MAXADU];
-#endif
 
     // Values set by process_event
     int sum;                            // should be float?  But it's used as an array index
 protected:
     enum { NMAP = 256 };
     struct look_up {
-        look_up() : type(0), extr(0),
-#if USE_NDARRAY
-                    hist()
-#else
-                    hist(0)
-#endif
-        {}
+        look_up() : type(0), extr(0), hist() {}
 
         int *type;
         const int *extr;
-#if USE_NDARRAY
-    ndarray::Array<int, 1, 1> hist;
-#else
-        int *hist;
-#endif
+        ndarray::Array<int, 1, 1> hist;
     } table[NMAP];
 
     void applyResetClockCorrection(short phe[9]);

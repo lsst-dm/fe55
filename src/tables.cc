@@ -25,9 +25,7 @@
 HistogramTable::HistogramTable(int event, int split,
                                        RESET_STYLES sty, double rst, const int filter,
                                        calctype do_what) :
-#if USE_NDARRAY
     histo(ndarray::allocate(ndarray::makeVector(8, MAXADU))),
-#endif
     _event(event), _split(split), _filter(filter), _do_what(do_what), _efile(""), _sty(sty), _rst(rst)
 {
     static
