@@ -363,7 +363,6 @@ def showMedpict(fileName="events.dat", events=None, image=None):
                         ds9.flush()
                         import pdb; pdb.set_trace() 
 
-
 def calcTypeFromString(string):
     P_names =  [_ for _ in dir(ras.HistogramTable) if _.startswith("P_")]
     if string not in P_names:
@@ -371,70 +370,6 @@ def calcTypeFromString(string):
 
     return eval("ras.HistogramTable.%s" % string)
                         
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-def simpleProcessImage(thresh, fileNames, grades=range(8), searchThresh=None, split=None,
-                       calcType=ras.HistogramTable.P_9,
-                       outputHistFile=None, outputEventsFile=None,
-                       plot=True, subplots=False):
-
-    if searchThresh is None:
-        searchThresh = thresh
-
-    events = []
-    for fileName in fileNames:
-        # Read file
-        md = dafBase.PropertyList()
-        image = afwImage.ImageF(fileName, 1, md)
-        # Get the image's camera geometry (e.g. where is the datasec?)
-        amp = makeAmp(md)
-        # Subtract the bias, estimated as the median of the biassec
-        bias = image.Factory(image, amp.getBiasSec())
-        image -= afwMath.makeStatistics(bias, afwMath.MEDIAN).getValue()
-        # Search the datasec for Fe55 events
-        dataSec = image.Factory(image, amp.getDataSec())
-        fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
-        # Convert all the peaks within the detections to Events
-        for foot in fs.getFootprints():
-            for i, peak in enumerate(foot.getPeaks()):
-                try:
-                    events.append(ras.Event(image, afwGeom.PointI(peak.getIx(), peak.getIy())))
-                except lsst.pex.exceptions.LsstCppException, e:
-                    pass
-    #
-    # Prepare to go through all our events, building our histograms
-    #
-    if split is None:
-        split = int(0.33*thresh)
-
-    filt = sum([1 << g for g in grades])
-
-    table = ras.HistogramTable(thresh, split)
-    table.setFilter(filt)
-    table.setCalctype(calcType)
-    table.setReset(ras.HistogramTable.T1, 0.0)
-    # Process the events
-    status = [table.process_event(ev) for ev in events]
-    print "Passed %5d events" % (sum(status))
-    #
-    # Done.  Output...
-    #
-    if outputEventsFile:
-        with open(outputEventsFile, "w") as fd:
-            for stat, ev in zip(status, events):
-                if stat:
-                    print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, ev.sum, ev[4], ev.p9)
-
-    if outputHistFile:
-        with open(outputHistFile, "w") as fd:
-            table.dump_head(fd, "unknown", sum(status))
-            table.dump_hist(fd)
-    #table.dump_table()
-
-    if plot:
-        plot_hist(table, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"),
-                  subplots=subplots)
-
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 searchThresh=20
