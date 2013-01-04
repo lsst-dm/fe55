@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import lsst.rasmussen.rv as rv
 
 parser = argparse.ArgumentParser(description='Process Fe55 events')
 
@@ -25,14 +24,19 @@ parser.add_argument('--threshold', type=int, help='Threshold for events ("event"
 
 args = parser.parse_args()
 
-rv.processImage(searchThresh=args.searchThreshold, thresh=args.threshold, split=args.split,
-                fileNames=args.images, grades=args.grades, emulateMedpict=args.medpict,
-                calcType=rv.calcTypeFromString(args.calcType),
-                outputEventsFile=args.outputEventsFile, outputHistFile=args.outputHistFile,
-                display=args.ds9, displayGrades=args.displayGrades,
-                displayRejects=args.displayRejects, displayUnknown=args.displayUnknown,
-                plot=args.plot, subplots=args.subplots,
-                )
+if args.medpict:
+    import lsst.rasmussen.medpict as fe55
+else:
+    import lsst.rasmussen.fe55 as fe55
+
+fe55.processImage(searchThresh=args.searchThreshold, thresh=args.threshold, split=args.split,
+                  fileNames=args.images, grades=args.grades, emulateMedpict=args.medpict,
+                  calcType=fe55.calcTypeFromString(args.calcType),
+                  outputEventsFile=args.outputEventsFile, outputHistFile=args.outputHistFile,
+                  display=args.ds9, displayGrades=args.displayGrades,
+                  displayRejects=args.displayRejects, displayUnknown=args.displayUnknown,
+                  plot=args.plot, subplots=args.subplots,
+                  )
 
 if args.plot:
     raw_input("Hit any key to exit ")
