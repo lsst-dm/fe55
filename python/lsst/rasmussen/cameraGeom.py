@@ -85,11 +85,13 @@ def makeAmp(md, channelNo=None):
             iCol, iRow = (channelNo - 1), 0
             rotate90 = 0                # Amp image is in the
             flipLR = False              #    same orientation as the CCD image
-        else:
+        elif channelNo <= 16:
             iCol, iRow = (16 - channelNo), 1
 
             rotate90 = 2                # Amp image is rotated
             flipLR = True               #     and flipped left-right relative to the CCD image
+        else:
+            raise StopIteration()
 
     dataSec = afwGeom.BoxI(afwGeom.PointI(data0, 0), afwGeom.ExtentI(nCol, nRow))
     biasSec = afwGeom.BoxI(afwGeom.PointI(data0 + nCol, 0), afwGeom.PointI(ewidth - 1, nRow - 1))
@@ -109,22 +111,37 @@ def makeAmp(md, channelNo=None):
 def makeCcd(fileName, fromHeader=False):
     ccd = cameraGeom.Ccd(cameraGeom.Id(0))
 
-    for a in range(1, 16 + 1):
-        hdu = 2 + (a - 1)               # 2 is the first real data HDU
+    a = 0                               # one-less than the next HDU
+    while True:                         # while there are valid HDUs
+        a += 1
         if fromHeader:
-            md, channelNo = afwImage.readMetadata(fileName, hdu), None
+            try:
+                hdu = 1 + a
+                md, channelNo = afwImage.readMetadata(fileName, hdu), None
+            except lsst.pex.exceptions.LsstCppException:
+                if hdu == 1:            # an empty PDU
+                    continue
+                break
+            
+            if "TTYPE1" in md.names():  # not an image
+                break
         else:
             md, channelNo = None, a
         #
         # Add amp to the Ccd
         #
-        ccd.addAmp(makeAmp(md, channelNo))
+        try:
+            ccd.addAmp(makeAmp(md, channelNo))
+        except StopIteration:
+            break
 
     return ccd
 
 def assembleCcd(fileName, trim=False, perRow=True):
     """Assemble a complete CCD image.  If trim is true, bias subtract and trim to the "real" pixels
 If perRow is True, estimate the bias level for each row of the overclock
+
+Return a tuplle of (afwCameraGeom.Ccd, ccdImage)
     """
     ccd = makeCcd(fileName)
 
