@@ -93,6 +93,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
             if assembleCcd:
                 if hdu > 1:
                     break
+
                 ccd, image = cameraGeom.assembleCcd(fileName, trim=True)
                 dataSec = image
                 ampIds = set(_.getId().getSerial() for _ in ccd)
@@ -172,6 +173,17 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
         status = [table0.process_event(ev) for ev in events]
     print "Passed %5d events" % (sum(status))
     #
+    # Estimate gain by looking for the peaks in the histograms (n.b. remember
+    # to disable gain correction by passing gain=1.0 to .cameraGeom.makeAmp)
+    #
+    if False:
+        if not plotByAmp:
+            print >> sys.stderr, "I'm only able to estimate relative gains if you set plotByAmp to be True"
+        else:
+            gains = estimateGains(tables)
+            for tableKey in sorted(tables.keys()):
+                print "%-2s : %.3f," % (tableKey, gains[tableKey])
+    #
     # Done.  Output...
     #
     if outputEventsFile:
@@ -213,6 +225,56 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
         plot_hist(tables, title="Event = %g Split = %g Source = %s N=%d" %
                   (thresh, split, os.path.basename(fileName), sum(status)),
                   xlim=xlim, ylim=ylim, subplots=subplots)
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+def smooth(x, windowLen, windowType="boxcar"):
+    """Smooth a numpy array, returning the smoothed values
+    
+    Adapted from http://www.scipy.org/Cookbook/SignalSmooth"""
+    if x.ndim != 1:
+        raise ValueError("smooth only accepts 1 dimension arrays.")
+ 
+    if x.size < windowLen:
+        raise ValueError("Input vector needs to be bigger than window size.")
+
+    if windowLen < 3:
+        return x
+
+    if windowType == "boxcar":
+        w = np.ones(windowLen,'d')
+    elif windowType == "hamming":
+        w = np.hamming(windowLen)
+    elif windowType == "hanning":
+        w = np.hanning(windowLen)
+    elif windowType == "bartlett":
+        w = np.bartlett(windowLen)
+    elif windowType == "blackman":
+        w = np.blackman(windowLen)
+    else:
+        raise ValueError("windowType %s is not one of 'boxcar', 'hanning', 'hamming', 'bartlett', 'blackman'"
+                         % windowType)
+
+    s = np.r_[x[windowLen-1:0:-1],x,x[-1:-windowLen:-1]]
+
+    y = np.convolve(w/w.sum(), s, mode='valid')
+
+    return y[windowLen//2:-windowLen//2 + 1]
+
+def estimateGains(tables, grade=6, truePeak=343.0):
+    gains = {}
+    for i, tableKey in enumerate(sorted(tables.keys())):
+        table = tables[tableKey]
+        x = np.arange(0, table.MAXADU)
+        y = smooth(table.histo[grade], 10)
+
+        peakX = x[np.where(y == np.max(y))]
+        gains[tableKey] = peakX/truePeak
+
+    if False:                           # corrected value
+        print truePeak*(sum(gains.values())/len(gains))
+
+    return gains
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
