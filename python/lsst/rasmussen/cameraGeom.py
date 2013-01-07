@@ -7,7 +7,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.display.ds9 as ds9
 
-def makeAmp(md, channelNo=None):
+def makeAmp(md, channelNo=None, trim=True):
     """Make a cameraGeom.Amp from metadata (or ab initio given it's channel number)"""
     #
     # Numbers that aren't in the header
@@ -106,9 +106,10 @@ def makeAmp(md, channelNo=None):
     #to detector coordinates.  This also sets the readout corner.
     amp.setElectronicToChipLayout(afwGeom.Point2I(iCol, iRow), rotate90, flipLR, cameraGeom.Amp.AMP)
 
+    amp.setTrimmed(trim)
     return amp
 
-def makeCcd(fileName, fromHeader=False):
+def makeCcd(fileName, fromHeader=False, trim=True):
     ccd = cameraGeom.Ccd(cameraGeom.Id(0))
 
     a = 0                               # one-less than the next HDU
@@ -131,7 +132,7 @@ def makeCcd(fileName, fromHeader=False):
         # Add amp to the Ccd
         #
         try:
-            ccd.addAmp(makeAmp(md, channelNo))
+            ccd.addAmp(makeAmp(md, channelNo, trim))
         except StopIteration:
             break
 
@@ -143,7 +144,7 @@ If perRow is True, estimate the bias level for each row of the overclock
 
 Return a tuplle of (afwCameraGeom.Ccd, ccdImage)
     """
-    ccd = makeCcd(fileName)
+    ccd = makeCcd(fileName, trim=trim)
 
     ccdImage = afwImage.ImageF(ccd.getAllPixels(trim))
 
@@ -162,6 +163,8 @@ Return a tuplle of (afwCameraGeom.Ccd, ccdImage)
                     data[:, i] -= biasVec
             else:
                 im -= afwMath.makeStatistics(bias, afwMath.MEANCLIP).getValue()
+
+        a.setTrimmed(True)
 
         sub = ccdImage.Factory(ccdImage, a.getAllPixels(trim))
         sub <<= a.prepareAmpData(im)
