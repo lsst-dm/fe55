@@ -115,7 +115,10 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
             fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
 
             if display:
-                ds9.mtv(image, title="bkgd subtracted", frame=0)
+                mi = afwImage.makeMaskedImage(image)
+                afwDetect.setMaskFromFootprintList(mi.getMask(), fs.getFootprints(), 0x4)
+                ds9.mtv(mi, title="bkgd subtracted", frame=0)
+                del mi
 
             # Convert all the peaks within the detections to Events
             for foot in fs.getFootprints():
