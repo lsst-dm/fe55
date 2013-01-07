@@ -95,7 +95,6 @@ def makeAmp(md, channelNo=None, trim=True):
 
     dataSec = afwGeom.BoxI(afwGeom.PointI(data0, 0), afwGeom.ExtentI(nCol, nRow))
     biasSec = afwGeom.BoxI(afwGeom.PointI(data0 + nCol, 0), afwGeom.PointI(ewidth - 1, nRow - 1))
-    biasSec = afwGeom.BoxI(afwGeom.PointI(data0 + nCol, 0), afwGeom.PointI(ewidth - 1, nRow - 1))
     allPixelsInAmp = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(ewidth, eheight))
 
     eParams = cameraGeom.ElectronicParams(gain, readNoise, saturationLevel)
