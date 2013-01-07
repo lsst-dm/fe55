@@ -7,7 +7,8 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.display.ds9 as ds9
 
-def makeAmp(md, channelNo=None, trim=True):
+def makeAmp(md, channelNo=None, trim=True,
+            gain=None, readNoise=1.0, saturationLevel=65535):
     """Make a cameraGeom.Amp from metadata (or ab initio given it's channel number)"""
     #
     # Numbers that aren't in the header
@@ -15,7 +16,6 @@ def makeAmp(md, channelNo=None, trim=True):
     nRow = 2000                         # number of real rows of CCD pixels readout through an amp
     nCol = 512                          # number of real columns of CCD pixels
     data0 = 10                          # first column of real pixels
-    gain, readNoise, saturationLevel = 1.0, 0, 0
 
     if md is not None:
         channelNo = md.get("CHANNEL")
@@ -78,6 +78,8 @@ def makeAmp(md, channelNo=None, trim=True):
         llc -= 1; urc -= 1                  # convert to C/C++/python/LSST 0-indexed convention
 
         iCol, iRow = int(llc[0]//ewidth), int(llc[1]//eheight) # int() converts from numpy.matrix
+        if gain is None:
+            gain = 1.0                  # guess
     else:
         ewidth, eheight = 542, 2022
 
@@ -92,6 +94,27 @@ def makeAmp(md, channelNo=None, trim=True):
             flipLR = True               #     and flipped left-right relative to the CCD image
         else:
             raise StopIteration()
+
+        gains = {
+            1 :  1.020,
+            2 :  1.000,
+            3 :  0.957,
+            4 :  0.965,
+            5 :  1.040,
+            6 :  0.997,
+            7 :  1.030,
+            8 :  1.030,
+            9 :  1.060,
+            10 : 0.977,
+            11 : 1.010,
+            12 : 0.957,
+            13 : 1.030,
+            14 : 0.942,
+            15 : 1.030,
+            16 : 0.948,
+            }
+        if gain is None:
+            gain = gains.get(channelNo, 1.0)
 
     dataSec = afwGeom.BoxI(afwGeom.PointI(data0, 0), afwGeom.ExtentI(nCol, nRow))
     biasSec = afwGeom.BoxI(afwGeom.PointI(data0 + nCol, 0), afwGeom.PointI(ewidth - 1, nRow - 1))
@@ -141,7 +164,7 @@ def assembleCcd(fileName, trim=False, perRow=True):
     """Assemble a complete CCD image.  If trim is true, bias subtract and trim to the "real" pixels
 If perRow is True, estimate the bias level for each row of the overclock
 
-Return a tuplle of (afwCameraGeom.Ccd, ccdImage)
+Return a tuple of (afwCameraGeom.Ccd, ccdImage)
     """
     ccd = makeCcd(fileName, trim=trim)
 
@@ -166,7 +189,9 @@ Return a tuplle of (afwCameraGeom.Ccd, ccdImage)
         a.setTrimmed(True)
 
         sub = ccdImage.Factory(ccdImage, a.getAllPixels(trim))
+
         sub <<= a.prepareAmpData(im)
+        sub /= a.getElectronicParams().getGain()
 
     return ccd, ccdImage
     
