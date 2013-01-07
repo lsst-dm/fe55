@@ -201,7 +201,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
     #table.dump_table()
 
     if plot:
-        fe55.plot_hist(table, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"),
+        fe55.plot_hist({None : table}, title="Event = %g Split = %g Source = %s" % (thresh, split, "unknown"),
                        subplots=subplots)
 
     return table, image, events

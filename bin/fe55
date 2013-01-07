@@ -11,6 +11,8 @@ parser.add_argument('--outputEventsFile', type=str, help='Output file for events
 parser.add_argument('--outputHistFile', type=str, help='Output file for histogram data')
 parser.add_argument('--assembleCcd', action="store_true",
                     help='Read all amps and assemble them into a CCD before looking for events')
+parser.add_argument('--plotByAmp', action="store_true",
+                    help="Process each amplifier separately (only useful for plotting")
 parser.add_argument('--displayGrades', action="store_true", help="Label the ds9 points with grades", default=False)
 parser.add_argument('--displayRejects', action="store_true", help="Display rejected events", default=False)
 parser.add_argument('--displayUnknown', action="store_true", help="Display rejected events", default=False)
@@ -35,7 +37,7 @@ fe55.processImage(searchThresh=args.searchThreshold, thresh=args.threshold, spli
                   fileNames=args.images, grades=args.grades, emulateMedpict=args.medpict,
                   calcType=fe55.calcTypeFromString(args.calcType),
                   outputEventsFile=args.outputEventsFile, outputHistFile=args.outputHistFile,
-                  assembleCcd=args.assembleCcd,
+                  assembleCcd=args.assembleCcd, plotByAmp=args.plotByAmp,
                   display=args.ds9, displayGrades=args.displayGrades,
                   displayRejects=args.displayRejects, displayUnknown=args.displayUnknown,
                   plot=args.plot, subplots=args.subplots,
