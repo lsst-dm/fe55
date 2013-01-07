@@ -1,0 +1,160 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{xspace}
+\usepackage{listings}
+\definecolor{webgreen}{rgb}{0,0.5,0}
+\definecolor{purple}{rgb}{0.8,0.2,0.7}
+
+\lstset{language=C++,commentstyle=\color{red},identifierstyle=,keywordstyle=\color{webgreen},stringstyle=\color{purple},basicstyle=\color{blue}\scriptsize\tt,escapechar=\@,xleftmargin=5mm,aboveskip=5pt,belowskip=0pt,lineskip=-1pt,showstringspaces=false}
+
+\newcommand{\CPP}{C\texttt{++}\xspace}  % C++
+
+\begin{document}
+\title{Fe55 analysis using ``RV''}
+\author{Robert Lupton}
+\maketitle
+
+\section{Introduction}
+
+Andy Rasmussen kindly provided me with some legacy C used to analyse Fe55 data,
+\texttt{medpict\_lsst.c}, \texttt{rv\_ev2pcf.c}, \texttt{rv\_ev2xygpx.c}, and \texttt{rv\_gflt.c}. These
+are designed to be used in a unix pipeline, \textit{e.g.}
+\begin{lstlisting}
+medpict_lsst -b -f c -c -e < fe55_files*.fits > evlist.dat
+cat evlist.dat | rv_gflt 30 10 -g 0 2 3 4 6 | rv_ev2xygpx 30 10 p9
+\end{lstlisting}
+
+In order to explore the use of the LSST DM stack while testing and manufacturing the LSST camera,
+I took a look at these C codes with the intention of:
+\begin{itemize}
+  \item Seeing to what extent the code is production quality\footnote{\textit{N.b.} Andy R. made
+    no representation that the code should be used in production;  rather it is part of his personal toolset}
+  \item Discovering how hard it would be to rewrite the code in \CPP
+  \item Finding how much of the functionality is already present in the DM stack
+  \item Exploring how easily the DM stack can be used, in conjunction with this code, to analyse Fe55 data
+\end{itemize}
+
+\section{Code Quality}
+
+The code shows its age;  it was clearly originally written for a pre-C89 compiler (\textit{e.g.} no
+prototypes; old style function declarations) and has been only partially updated.
+The compilers\footnote{I used both gcc and clang} generated many warnings, and some of them turned out to
+be real bugs (\textit{e.g.} when I added function prototypes, I found erroneous arguments being passed
+to functions;  I am not quite sure why the code didn't crash outright in some cases).  These errors
+prevented me from compiling with a \CPP compiler until they'd been fixed.
+
+Some of the code is fairly obscure in the interests of doubtful optimisation (\textit{e.g.} the lookup tables
+designed to handle bias subtraction); this is particularly true of the \texttt{medpict} program used to
+detect Fe55 events.
+
+There is a lot of code repetition between the various routines, quite a lot of hard-coded numbers, and
+extensive use of global variables reducing the code's reusability.
+
+The example pipeline I gave above used a temporary file rather than a pure pipline; this is in fact necessary
+due to the assumptions that the code makes about the posix \texttt{read} call always returning as many bytes
+as are requested.
+
+The code as written mixes up the classification of the events with the generation of the histograms, and
+generates the outputs in a format designed to be used with a rather obscure front-end to \texttt{pgplot}
+called \texttt{QDP}.
+
+\section{An experimental rewrite in \CPP}
+
+\begin{figure}
+\lstset{language=Python}
+\begin{lstlisting}
+def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=None,
+                 calcType=ras.HistogramTable.P_9,
+                 outputHistFile=None, outputEventsFile=None):
+
+    if searchThresh is None:
+        searchThresh = thresh
+
+    ccd, image = cameraGeom.assembleCcd(fileName, trim=True)
+    # Run detection
+    fs = afwDetect.FootprintSet(image, afwDetect.Threshold(searchThresh))
+
+    # Convert all the peaks within the detections to Events
+    for foot in fs.getFootprints():
+        for i, peak in enumerate(foot.getPeaks()):
+            peakPos = afwGeom.PointI(peak.getIx(), peak.getIy())
+            amp = ccd.findAmp(peakPos, True)
+                
+            events.append(ras.Event(image, peakPos, frameNum, amp.getId().getSerial()))
+    #
+    # Prepare to go through all our events, building our histograms
+    #
+    if split is None:
+        split = int(0.33*thresh)
+
+    filt = sum([1 << g for g in grades])
+
+    table = ras.HistogramTable(thresh, split)
+    table.setFilter(filt)
+    table.setCalctype(calcType)
+    table.setReset(ras.HistogramTable.T1, 0.0)
+
+    # Process the events
+    status = [table.process_event(ev) for ev in events]
+
+    # Output
+    with open(outputEventsFile, "w") as fd:
+        for stat, ev in zip(status, events):
+            if stat:
+                print >> fd, "%d %d %d %d %g %d" % (ev.x, ev.y, ev.grade, ev.sum, ev[4], ev.p9)
+
+    with open(outputHistFile, "w") as fd:
+        table.dump_head(fd, "unknown", sum(status))
+        table.dump_hist(fd)
+    #table.dump_table()
+\end{lstlisting}
+\caption{A minimalistic processing script for Fe55 events}
+\label{processImage}
+\end{figure}
+
+\begin{figure}
+\lstset{language=Python}
+\begin{lstlisting}
+def plot_hist(table):
+    fig = plt.figure()
+    axes = fig.add_axes((0.1, 0.1, 0.85, 0.80))
+
+    x = np.arange(0, table.MAXADU)
+    for g, label in enumerate(["N(S)",  "N(S+)", "N(Pv)",  "N(Pl)",
+                               "N(Pr)", "N(P+)", "N(L+Q)", "N(O)",]):
+        axes.step(x, table.histo[g], label="%d %s" % (g, label), where='mid')
+
+    axes.set_xlabel("Pulse Height (ADU)")
+    axes.set_ylabel("lg(N)")
+    axes.set_xlim(table.min_adu - 10, table.max_adu + 10)
+
+    axes.legend(loc=1)
+    fig.show()
+\end{lstlisting}
+\caption{A minimalistic plotting script}
+\label{plot_hist}
+\end{figure}
+
+ I checked Andy's code into git at \texttt{git\@git.lsstcorp.org:contrib/fe55}, and proceeded
+with a rewrite into \CPP.
+
+While working on refactoring the code I checked that I got the exact results that the initial C code had
+produced (these regression tests are run as part of the regular build).  This required me to emulate various
+features of the C code (\textit{e.g.} its definition of a peak); I believe that these were mostly in fact
+bugs.
+
+When the prototype-related bugs were fixed I was able to compile Andy's C with a \CPP compiler, but I decided
+that rather than make a minimal translation I'd re-write the algorithms into rather more idiomatic code;
+I did not change the basic approach of statically initialised tables.  I'd
+capture all the globals in a \texttt{HistogramTable} class, and handle as much of possible as the
+classification via an \texttt{Event} class.  I bound the \CPP to python using swig, and mapped the histograms
+to \texttt{numpy} using Jim Bosch's \texttt{ndarray} class, permitting the use of python's \texttt{matplotlib}
+(the DM standard plotting library); see Figs. \ref{processImage} and \ref{plot_hist}.  Visualisation of images
+and events was done via the DM's \texttt{ds9} interface.
+
+\subsection{\texttt{cameraGeom}; a description of the data layout}
+
+
+
+\end{document}

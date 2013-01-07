@@ -1,3 +1,6 @@
 doxygen.conf
 html
 *.tag
+report.aux
+report.log
+report.pdf
