@@ -42,4 +42,7 @@ fe55.processImage(searchThresh=args.searchThreshold, thresh=args.threshold, spli
                   )
 
 if args.plot:
-    raw_input("Hit any key to exit ")
+    try:
+        raw_input("Hit any key to exit ")
+    except (EOFError, IOError):
+        pass
