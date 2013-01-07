@@ -81,8 +81,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
     if searchThresh is None:
         searchThresh = thresh
 
-    assembleCcd=True        
-
+    nImage = 0                          # number of images we've processed
     events = []
     for fileName in fileNames:
         # Read file
@@ -112,6 +111,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
                 # Search the datasec for Fe55 events
                 dataSec = image.Factory(image, amp.getDiskDataSec())
 
+            nImage += 1
             fs = afwDetect.FootprintSet(dataSec, afwDetect.Threshold(searchThresh))
 
             if display:
@@ -154,7 +154,10 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
             table.dump_hist(fd)
     #table.dump_table()
 
-    if display:
+    if nImage > 1:
+        if display:
+            print >> sys.stderr, "No point plotting events as they refer to multiple amps/ccds"
+    elif display:
         size = 1.6                      # half-size of box to draw
         with ds9.Buffering():
             for ev, success in zip(events, status):

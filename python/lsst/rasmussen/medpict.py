@@ -86,7 +86,9 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
                  calcType=ras.HistogramTable.P_9,
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
                  displayRejects=False, displayUnknown=False, displayGrades=True,
-                 display=False, plot=True, subplots=False):
+                 display=False, plot=True, subplots=False,
+                 assembleCcd=None,      # not used
+                 ):
 
     events = []
     for fileName in fileNames:
