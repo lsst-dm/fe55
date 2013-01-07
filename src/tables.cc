@@ -170,7 +170,7 @@ const int HistogramTable::MAXADU = 4096;
  *  Insert the reset clock correction
  */
 void
-HistogramTable::applyResetClockCorrection(short phe[9])
+HistogramTable::applyResetClockCorrection(short phe[9]) const
 {
     switch (_sty) {
       case T6:
@@ -205,6 +205,44 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
         ev->grade = lsst::rasmussen::Event::UNKNOWN; // We don't know map yet.
         return false;
     }
+    /*
+     * Classify that event, setting its grade etc.
+     */
+    const int map = classify(ev);
+    /* 
+     *  grade is identified. check with _filter to see whether  to pass it on or not.
+     */
+    if (ev->grade == lsst::rasmussen::Event::UNKNOWN ||
+        ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
+        return false;
+    }
+    /*
+     *  Accumulate statistics and various bounds
+     */
+    if (ev->sum >= MAXADU) { noobnd++;  return false; }
+    if (ev->sum > max_adu) max_adu = ev->sum;
+    if (ev->sum < min_adu) min_adu = ev->sum;
+    if (ev->x < xn) xn = ev->x;
+    if (ev->x > xx) xx = ev->x;
+    if (ev->y < yn) yn = ev->y;
+    if (ev->y > yx) yx = ev->y;
+    xav += ev->x;
+    yav += ev->y;
+    ntotal++;
+    look_up *const ent = &table[map];
+    *ent->type += 1;
+    const int hsum = ent->hist[static_cast<int>(ev->sum)]++;
+    if (hsum > 2) {
+        if (ev->sum > max_2ct) max_2ct = ev->sum;
+        if (ev->sum < min_2ct) min_2ct = ev->sum;
+    }
+
+    return true;
+}
+
+int
+HistogramTable::classify(lsst::rasmussen::Event *ev) const
+{
 
     short phe[9];
     std::copy(ev->data, ev->data + 9, phe);
@@ -257,37 +295,11 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
     /*
      *  Finish pha with extra pixels of L, Q, and O events
      */
-    look_up *const ent = &table[map];
+    const look_up *const ent = &table[map];
     const int *xtr = ent->extr;
     for (int j = 0; xtr[j] != 4 && j < 4; j++) ev->sum += phe[xtr[j]];
-    /* 
-     *  grade is identified. check with _filter to see whether  to pass it on or not.
-     */
-    if (ev->grade == lsst::rasmussen::Event::UNKNOWN ||
-        ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
-        return false;
-    }
-    /*
-     *  Accumulate statistics and various bounds
-     */
-    if (ev->sum >= MAXADU) { noobnd++;  return false; }
-    if (ev->sum > max_adu) max_adu = ev->sum;
-    if (ev->sum < min_adu) min_adu = ev->sum;
-    if (ev->x < xn) xn = ev->x;
-    if (ev->x > xx) xx = ev->x;
-    if (ev->y < yn) yn = ev->y;
-    if (ev->y > yx) yx = ev->y;
-    xav += ev->x;
-    yav += ev->y;
-    ntotal += 1;
-    *ent->type += 1;
-    const int hsum = ent->hist[static_cast<int>(ev->sum)]++;
-    if (hsum > 2) {
-        if (ev->sum > max_2ct) max_2ct = ev->sum;
-        if (ev->sum < min_2ct) min_2ct = ev->sum;
-    }
 
-    return true;
+    return map;
 }
 
 /*

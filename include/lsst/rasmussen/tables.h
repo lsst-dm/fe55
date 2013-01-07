@@ -27,6 +27,8 @@ public:
     void dump_hist(FILE *fd=stdout, const char *sfile=NULL) const;
     void dump_table() const;
 
+    virtual int classify(lsst::rasmussen::Event *ev) const;
+    
     void setFilter(const int filter) { _filter = filter; }
     void setCalctype(const calctype do_what) { _do_what = do_what; }
     void setReset(const RESET_STYLES sty, double rst) { _sty = sty; _rst = rst; }
@@ -50,7 +52,7 @@ protected:
         ndarray::Array<int, 1, 1> hist;
     } table[NMAP];
 
-    void applyResetClockCorrection(short phe[9]);
+    void applyResetClockCorrection(short phe[9]) const;
 
     int _event;
     int _split;
