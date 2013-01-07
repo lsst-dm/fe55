@@ -254,6 +254,12 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
         }
     }
     ev->grade = table[map].grade;
+    /*
+     *  Finish pha with extra pixels of L, Q, and O events
+     */
+    look_up *const ent = &table[map];
+    const int *xtr = ent->extr;
+    for (int j = 0; xtr[j] != 4 && j < 4; j++) ev->sum += phe[xtr[j]];
     /* 
      *  grade is identified. check with _filter to see whether  to pass it on or not.
      */
@@ -261,13 +267,6 @@ HistogramTable::process_event(lsst::rasmussen::Event *ev
         ((1 << static_cast<int>(ev->grade)) & _filter) == 0x0) {
         return false;
     }
-
-    /*
-     *  Finish pha with extra pixels of L, Q, and O events
-     */
-    look_up *const ent = &table[map];
-    const int *xtr = ent->extr;
-    for (int j = 0; xtr[j] != 4 && j < 4; j++) ev->sum += phe[xtr[j]];
     /*
      *  Accumulate statistics and various bounds
      */
