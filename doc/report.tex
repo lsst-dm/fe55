@@ -7,6 +7,7 @@
 \definecolor{purple}{rgb}{0.8,0.2,0.7}
 
 \lstset{language=C++,commentstyle=\color{red},identifierstyle=,keywordstyle=\color{webgreen},stringstyle=\color{purple},basicstyle=\color{blue}\scriptsize\tt,escapechar=\@,xleftmargin=5mm,aboveskip=5pt,belowskip=0pt,lineskip=-1pt,showstringspaces=false}
+\lstset{language=Python}
 
 \newcommand{\CPP}{C\texttt{++}\xspace}  % C++
 
@@ -62,7 +63,6 @@ called \texttt{QDP}.
 \section{An experimental rewrite in \CPP}
 
 \begin{figure}
-\lstset{language=Python}
 \begin{lstlisting}
 def processImage(thresh, fileName, grades=range(8), searchThresh=None, split=None,
                  calcType=ras.HistogramTable.P_9,
@@ -136,7 +136,35 @@ def plot_hist(table):
 \label{plot_hist}
 \end{figure}
 
- I checked Andy's code into git at \texttt{git\@git.lsstcorp.org:contrib/fe55}, and proceeded
+\begin{figure}
+  \includegraphics[width=\the\hsize]{fe55-ds9}
+  \caption{The central part of the CCD (the corners of amps 4, 5, 12, and 13) showing Fe55 events
+    and cosmic ray hits.  Detected
+    pixels are a tasteful light green, and the desired grades of event (0 2 3 4 6) are coloured
+    as in the caption for Fig. \ref{eventsHistogramGain} (with black replaced by white).  The
+    bias was estimated separately for each row of each amp due to significant (and correlated)
+    spatial structure in amps 9, 11, 13, and 15.
+  }
+  \label{ds9Events}
+\end{figure}
+
+\begin{figure}
+  \hspace*{-10mm}\includegraphics[height=12cm]{fe55-gain}
+  \caption{A histogram of events.  Each amplifier has been corrected for its gain in
+    such a way that the individual histograms line up
+  }
+  \label{eventsHistogramGain}.
+\end{figure}
+
+\begin{figure}
+  \hspace*{-10mm}\includegraphics[height=12cm]{fe55-gain-perAmp}
+  \caption{A histogram of events for each amplifier.  Each amplifier has been corrected for its gain in
+    such a way that the individual histograms line up
+  }
+  \label{eventsHistogramPerAmp}
+\end{figure}
+
+I checked Andy's code into git at \texttt{git\@git.lsstcorp.org:contrib/fe55}, and proceeded
 with a rewrite into \CPP.
 
 While working on refactoring the code I checked that I got the exact results that the initial C code had
@@ -153,8 +181,92 @@ to \texttt{numpy} using Jim Bosch's \texttt{ndarray} class, permitting the use o
 (the DM standard plotting library); see Figs. \ref{processImage} and \ref{plot_hist}.  Visualisation of images
 and events was done via the DM's \texttt{ds9} interface.
 
+I was able to entirely replace the C codes with python calling DM's \CPP primitives, \textit{e.g.}
+object detection (a large portion of \texttt{medpict}) is simply:
+\begin{lstlisting}
+  fs = afwDetect.FootprintSet(image, afwDetect.Threshold(searchThresh))
+\end{lstlisting}
+I could write all three \texttt{rv\_*.c} routines as simple routines manipulating \texttt{HistogramTables}.
+For example, the shell command
+\begin{verbatim}
+fe55 fe55_3600s.fits.gz --grades 0 2 3 4 6 --calc P_9 --thresh 30 \
+     --split 10 --plot --plotByAmp --assemble --ds9
+\end{verbatim}
+calls a slightly more complicated version of the routine shown in Fig. \ref{processImage} to
+display the selected grades of event on \texttt{ds9} (see Fig. \ref{ds9Events}) and generate
+the histogram in Fig. \ref{eventsHistogramPerAmp} (omitting \texttt{--plotByAmp} generates
+Fig. \ref{eventsHistogramPerAmp}).  All this functionality is, of course, also available
+interactively from the python prompt.
+These per-amp plots were possible because of the replacement of global tables by the \texttt{HistogramTable}
+objects.  \textit{N.b.} These histogram were corrected for the per-amplifier gain by estimating the position
+of the peak of each separate histogram.
+
+We see that the grade 0 (single pixel events) are concentrated in amps 2, 4, 6, and 8; part of
+amp 4 may be seen in the south west quadrant of Fig. \ref{ds9Events}.
+
 \subsection{\texttt{cameraGeom}; a description of the data layout}
 
+The DM stack supports a description of the way that amplifiers fit into CCDs, as well as how the CCDs are
+fitted into rafts, and the rafts into the camera; ``\texttt{lsst::afw::cameraGeom}''.
+In order to process Fe55 data we only need the first part
+of this (amps fitting into CCDs), and we don't need the soon-to-be-replaced on-disk description of
+the \texttt{cameraGeom}.  An alternative is to use the header keywords that describe the mapping
+from amp to CCD coordinates (\texttt{LTV1} \textit{etc.}).
 
+The advantage of the DM approach is that it encapsulates the data in classes with useful methods,
+\textit{e.g.} given a \texttt{cameraGeom::Ccd ccd} I can ask \texttt{ccd.findAmp(afwGeom::PointI(x, y))}
+to find to which amplifier a pixel \texttt{x, y} belongs.
+
+I wrote some code to parse the headers (a DM \texttt{PropertyList}) to construct the \texttt{cameraGeom}
+objects, but unfortunately:
+\begin{itemize}
+  \item The headers were not complete (\texttt{e.g.} no definition of the bias pixels)
+  \item The headers appeared to be incorrect (see Appendix \ref{badHeader})
+  \item The headers don't include \textit{e.g.} the amplifier's gain.
+\end{itemize}
+
+Putting these configuration parameters into an external file allows us to work with data with incorrect
+headers, and also allows us to version things like the gain and readnoise.  It is, of course, possible
+to validate the externally specified data from the headers.
+
+In Fig. \ref{processImage},
+\begin{lstlisting}
+    ccd, image = cameraGeom.assembleCcd(fileName, trim=True)
+\end{lstlisting}
+uses a light-weight \texttt{cameraGeom} specification to read all 16 amplifiers, correct for bias
+and gain, trim the overclock, and assemble a \texttt{4096x4000} CCD image.
+
+\appendix
+\section{Problems in the Fe55 Data Headers}
+\label{badHeader}
+
+I'm not an expert on the IRAF mosaic geometry headers, but I think the camera team got the geometry wrong ---
+I'd be happy to be proved wrong.
+
+For example, channel 1's header has:
+\begin{verbatim}
+DATASEC = [1:542,1:2022]
+DETSEC  = [0:542,0:2022]
+DETSIZE = [0:4336,0:4044]
+\end{verbatim}
+(so \texttt{DETSEC} is  543x2023 and \texttt{DETSIZE} is 4337x4045)
+If the 0 is correct, it implies that there's logically 1 pre-scan pixel so \texttt{Cx} starts at 0.0
+
+When we look at channel 16 we see
+\begin{verbatim}
+LTV1 =  542
+LTV2 = 4044
+\end{verbatim}
+which means that the pixel with \texttt{(Ic, Il) == (542, 4044)} maps to \texttt{(Cx, Cy) = (0.0, 0.0)}
+
+The problems with this theory are:
+\begin{enumerate}
+\item There are more than 1 overscan pixels (I think 10)
+\item The size of the DETSEC and DETSIZE are wrong --- they should be e.g. [0:541, 0:2021]
+\end{enumerate}
+
+I think that a more likely explanation is that there's an off-by-one error in \texttt{LTV[12]} for the 8
+rotated channels at the top of the chip; all the problems are resolved by incrementing their \texttt{LTV[12]}
+by 1.
 
 \end{document}
