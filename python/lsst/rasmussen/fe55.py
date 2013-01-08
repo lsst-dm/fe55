@@ -94,7 +94,7 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
                 if hdu > 1:
                     break
 
-                ccd, image = cameraGeom.assembleCcd(fileName, trim=True)
+                ccd, image = cameraGeom.assembleCcd(fileName, trim=True, perRow=True)
                 dataSec = image
                 ampIds = set(_.getId().getSerial() for _ in ccd)
             else:
