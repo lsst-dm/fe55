@@ -36,29 +36,42 @@ I took a look at these C codes with the intention of:
   \item Exploring how easily the DM stack can be used, in conjunction with this code, to analyse Fe55 data
 \end{itemize}
 
-\section{Code Quality}
+\section{Analysis of Existing Code}
 
-The code shows its age;  it was clearly originally written for a pre-C89 compiler (\textit{e.g.} no
+The code shows its age;  it was originally written for a pre-C89 compiler (\textit{e.g.} no
 prototypes; old style function declarations) and has been only partially updated.
 The compilers\footnote{I used both gcc and clang} generated many warnings, and some of them turned out to
-be real bugs (\textit{e.g.} when I added function prototypes, I found erroneous arguments being passed
-to functions;  I am not quite sure why the code didn't crash outright in some cases).  These errors
-prevented me from compiling with a \CPP compiler until they'd been fixed.
+be real bugs (\textit{e.g.} adding function prototypes uncovered mistakes in
+arguments being passed to functions; it's unclear why the code didn't crash outright in some cases).
+Fixing these issues allowed the code to be compiled with a \CPP compiler.
 
-Some of the code is fairly obscure in the interests of doubtful optimisation (\textit{e.g.} the lookup tables
-designed to handle bias subtraction); this is particularly true of the \texttt{medpict} program used to
-detect Fe55 events.
+Some of the code has been written in style that is difficult to read, ostensibly to
+make it run faster (\textit{e.g.} the lookup tables designed to handle bias
+subtraction). This is particularly true of the \texttt{medpict} program used to
+detect Fe55 events. However, general software engineering experience has shown that it's
+preferrable to sacrifice a few pct. of performance in favor of code clarity. Clear code
+leads to faster development, easier maintenence, and less bugs. Human time
+spent on detecting and fixing bugs is typically significantly more expensive than any 
+realized savings due to highly optimized code.
 
 There is a lot of code repetition between the various routines, quite a lot of hard-coded numbers, and
-extensive use of global variables reducing the code's reusability.
+extensive use of global variables. These reduce the code's reusability and
+should be avoided in the future.
 
 The example pipeline I gave above used a temporary file rather than a pure pipline; this is in fact necessary
-due to the assumptions that the code makes about the posix \texttt{read} call always returning as many bytes
+due to the assumptions that the code makes about the POSIX \texttt{read} call always returning as many bytes
 as are requested.
 
 The code as written mixes up the classification of the events with the generation of the histograms, and
-generates the outputs in a format designed to be used with a rather obscure front-end to \texttt{pgplot}
+generates the outputs in a format designed to be used with a not well known front-end to \texttt{pgplot}
 called \texttt{QDP}.
+
+
+All of the identified issues are understandable in light of the organic
+evolution and intent behind this code, its age, and the lack of a standard
+``toolbox'' of image processing routines that one could rely on.  Below, I
+show how this code could be written today, using LSST DM stack routines for
+common tasks.
 
 \section{An experimental rewrite in \CPP}
 
@@ -169,10 +182,10 @@ with a rewrite into \CPP.
 
 While working on refactoring the code I checked that I got the exact results that the initial C code had
 produced (these regression tests are run as part of the regular build).  This required me to emulate various
-features of the C code (\textit{e.g.} its definition of a peak); I believe that these were mostly in fact
-bugs.
+features of the C code (\textit{e.g.} its definition of a peak); a number of
+these may actually be bugs.
 
-When the prototype-related bugs were fixed I was able to compile Andy's C with a \CPP compiler, but I decided
+When the prototype-related issues were fixed I was able to compile Andy's C with a \CPP compiler, but I decided
 that rather than make a minimal translation I'd re-write the algorithms into rather more idiomatic code;
 I did not change the basic approach of statically initialised tables.  I'd
 capture all the globals in a \texttt{HistogramTable} class, and handle as much of possible as the
@@ -206,7 +219,7 @@ amp 4 may be seen in the south west quadrant of Fig. \ref{ds9Events}.
 
 \subsection{\texttt{cameraGeom}; a description of the data layout}
 
-The DM stack supports a description of the way that amplifiers fit into CCDs, as well as how the CCDs are
+The LSST DM stack supports a description of the way that amplifiers fit into CCDs, as well as how the CCDs are
 fitted into rafts, and the rafts into the camera; ``\texttt{lsst::afw::cameraGeom}''.
 In order to process Fe55 data we only need the first part
 of this (amps fitting into CCDs), and we don't need the soon-to-be-replaced on-disk description of
@@ -240,8 +253,8 @@ and gain, trim the overclock, and assemble a \texttt{4096x4000} CCD image.
 \section{Problems in the Fe55 Data Headers}
 \label{badHeader}
 
-I'm not an expert on the IRAF mosaic geometry headers, but I think the camera team got the geometry wrong ---
-I'd be happy to be proved wrong.
+I'm not an expert on the IRAF mosaic geometry headers, but I think the geometry
+as stored in the headers is incorrect --- I'd be happy to be proved wrong.
 
 For example, channel 1's header has:
 \begin{verbatim}
