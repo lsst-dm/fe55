@@ -87,7 +87,8 @@ def processImage(thresh, fileNames, grades=range(8), searchThresh=None, split=No
                  emulateMedpict=False, outputHistFile=None, outputEventsFile=None,
                  displayRejects=False, displayUnknown=False, displayGrades=True,
                  display=False, plot=True, subplots=False,
-                 assembleCcd=None,      # not used
+                 assembleCcd=None,      # not implemented
+                 plotByAmp=None,        # not implemented
                  ):
 
     events = []
