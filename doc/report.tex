@@ -49,23 +49,22 @@ Some of the code has been written in style that is difficult to read, ostensibly
 make it run faster (\textit{e.g.} the lookup tables designed to handle bias
 subtraction). This is particularly true of the \texttt{medpict} program used to
 detect Fe55 events. However, general software engineering experience has shown that it's
-preferrable to sacrifice a few pct. of performance in favor of code clarity. Clear code
+preferrable to sacrifice a few percent of performance in favor of code clarity. Clear code
 leads to faster development, easier maintenence, and less bugs. Human time
 spent on detecting and fixing bugs is typically significantly more expensive than any 
-realized savings due to highly optimized code.
+realized savings due to highly optimized code, and with modern compilers we're often not
+required to actually make the sacrifice. 
 
 There is a lot of code repetition between the various routines, quite a lot of hard-coded numbers, and
-extensive use of global variables. These reduce the code's reusability and
-should be avoided in the future.
+extensive use of global variables, reducing the code's reusability.
 
 The example pipeline I gave above used a temporary file rather than a pure pipline; this is in fact necessary
 due to the assumptions that the code makes about the POSIX \texttt{read} call always returning as many bytes
 as are requested.
 
 The code as written mixes up the classification of the events with the generation of the histograms, and
-generates the outputs in a format designed to be used with a not well known front-end to \texttt{pgplot}
-called \texttt{QDP}.
-
+generates the outputs in a format designed to be used
+with \texttt{QDP}, a slightly unusual front-end to \texttt{pgplot}.
 
 All of the identified issues are understandable in light of the organic
 evolution and intent behind this code, its age, and the lack of a standard
