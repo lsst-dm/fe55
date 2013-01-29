@@ -45,11 +45,11 @@ be real bugs (\textit{e.g.} adding function prototypes uncovered mistakes in
 arguments being passed to functions; it's unclear why the code didn't crash outright in some cases).
 Fixing these issues allowed the code to be compiled with a \CPP compiler.
 
-Some of the code has been written in style that is difficult to read, ostensibly to
-make it run faster (\textit{e.g.} the lookup tables designed to handle bias
+Some of the code has been written in style that is difficult to read, with the intent of
+making it run faster (\textit{e.g.} the lookup tables designed to handle bias
 subtraction). This is particularly true of the \texttt{medpict} program used to
 detect Fe55 events. However, general software engineering experience has shown that it's
-preferrable to sacrifice a few percent of performance in favor of code clarity. Clear code
+preferable to sacrifice a few percent of performance in favor of code clarity. Clear code
 leads to faster development, easier maintenence, and less bugs. Human time
 spent on detecting and fixing bugs is typically significantly more expensive than any 
 realized savings due to highly optimized code, and with modern compilers we're often not
